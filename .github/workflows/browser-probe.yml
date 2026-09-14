@@ -1,0 +1,24 @@
+name: Browser probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright with full Chromium
+        run: |
+          npm install --no-save playwright tsx
+          npx playwright install --with-deps chromium
+      - name: Probe (new headless + headless shell)
+        run: npx tsx worker/probe.ts new shell
+      - name: Probe (headed, virtual display)
+        run: xvfb-run --auto-servernum npx tsx worker/probe.ts headed

@@ -1,0 +1,173 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-display: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-drop: var(--drop);
+  --color-drop-soft: var(--drop-soft);
+  --color-up: var(--up);
+  --color-warn: var(--warn);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+}
+
+:root {
+  --canvas: #f6f5f1;
+  --surface: #ffffff;
+  --sunken: #eceae3;
+  --ink: #17160f;
+  --muted: #6b6960;
+  --faint: #a19e93;
+  --line: #e4e1d8;
+  --drop: #13804a;
+  --drop-soft: #dcf2e4;
+  --up: #b4452f;
+  --warn: #9a6a00;
+  --accent: #17160f;
+  --on-accent: #ffffff;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #121210;
+    --surface: #1c1c19;
+    --sunken: #262622;
+    --ink: #f3f1ea;
+    --muted: #a3a097;
+    --faint: #6e6c64;
+    --line: #2e2d29;
+    --drop: #4fd08a;
+    --drop-soft: #17392a;
+    --up: #f08a73;
+    --warn: #e5b547;
+    --accent: #f3f1ea;
+    --on-accent: #121210;
+    color-scheme: dark;
+  }
+}
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+}
+
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.animate-rise {
+  animation: rise 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.animate-sheet {
+  animation: sheet 0.32s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.animate-fade {
+  animation: fade 0.2s ease both;
+}
+
+.animate-pop {
+  animation: pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.check-path {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: draw 0.35s 0.2s ease-out forwards;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--sunken) 25%, var(--line) 50%, var(--sunken) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.3s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+  }
+  .check-path {
+    stroke-dashoffset: 0;
+  }
+}
