@@ -15,6 +15,6 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["node", "vite/client", "vite-plugin-pwa/client"]
   },
-  "include": ["src", "shared", "netlify", "vite.config.ts"],
+  "include": ["src", "shared", "netlify", "worker", "vite.config.ts"],
   "exclude": ["src/sw.ts"]
 }

@@ -41,7 +41,18 @@ export function needsConfirmation(product: Product, newPrice: number): boolean {
   return change > 0.7 && product.pendingPrice !== newPrice
 }
 
-export function isDue(product: Product, now: number): boolean {
+/**
+ * `lookaheadMs` lets the browser worker also take products that will be due soon,
+ * so runs cluster together instead of starting a runner every hour.
+ */
+export function isDue(product: Product, now: number, lookaheadMs = 0): boolean {
   // 5 minute slack so an hourly cron doesn't skip a 6h product by a few seconds.
-  return now - product.lastCheckedAt >= product.intervalHours * 3600_000 - 5 * 60_000
+  return now - product.lastCheckedAt >= product.intervalHours * 3600_000 - 5 * 60_000 - lookaheadMs
+}
+
+/** Browser-route products the worker should check now. */
+export function needsBrowserCheck(product: Product, now: number): boolean {
+  if (product.route !== 'browser' || product.unsupported) return false
+  const lookahead = Math.min(3 * 3600_000, (product.intervalHours * 3600_000) / 2)
+  return Boolean(product.pending || product.checkRequested) || isDue(product, now, lookahead)
 }

@@ -4,19 +4,54 @@ Personal price-drop alerts. Share a product link → tap **Track** → get a pus
 
 - **App:** React PWA (Vite + Tailwind), installable, with a share target on Android and an iOS Shortcut
 - **API + cron:** Netlify Functions, with an hourly scheduled function that checks products when they're due
+- **Browser worker:** GitHub Actions + Playwright, only for shops that block server requests (e.g. Zara)
 - **Storage:** Netlify Blobs (no database)
 - **Alerts:** Web Push (VAPID)
 - **Price detection:** no LLM and no per-site code. See [How prices are found](#how-prices-are-found)
 
+## How checks run
+
+```
+            ┌──────────── Netlify (hourly cron) ────────────┐
+product ──▶ │ plain fetch → extract → rules → push           │
+            │   └─ blocked? → route = browser ─┐             │
+            └──────────────────────────────────┼─────────────┘
+                                               ▼ workflow_dispatch
+            ┌──────── GitHub Actions: price-worker.yml ─────┐
+            │ GET /api/worker/jobs → Chromium → extract      │
+            │ POST /api/worker/result → same rules → push    │
+            └────────────────────────────────────────────────┘
+```
+
+- **Adding from a blocked shop:** the product is saved as *Getting the price…* and the worker starts. You get a notification with the price in about 2 minutes.
+- **Two blocked runs in a row:** if the browser is blocked twice for a new product, it's marked as not trackable and you get one notification about it.
+- **H&M** blocks cloud IPs even for real browsers, so it's currently not trackable from GitHub. The same worker works from a home connection: `npx tsx worker/run.ts`.
+
 ## Deploy (free)
 
-1. Push this folder to a Git repo and create a Netlify site from it (the build settings come from `netlify.toml`).
+**Netlify**
+
+1. Create a Netlify site from this repo (the build settings come from `netlify.toml`).
 2. Generate push keys: `npm run vapid`
 3. In Netlify → Site configuration → Environment variables, add:
    - `APP_SECRET`: any long random string
    - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`: from step 2
    - `VAPID_SUBJECT`: `mailto:you@example.com`
+   - `GITHUB_REPO`: `gianluca-vedovato-24/price-check`
+   - `GITHUB_TOKEN`: a [fine-grained token](https://github.com/settings/personal-access-tokens/new) with access to this repository only and the permission **Actions: Read and write**
 4. Redeploy, open the site, paste `APP_SECRET` once.
+
+**GitHub (browser worker)**
+
+In the repo → Settings → Secrets and variables → Actions:
+- **Secrets:**
+  - `PRICE_CHECK_URL`: your Netlify site URL
+  - `APP_SECRET`: same value as on Netlify
+- **Variable:** `WORKER_ENABLED` = `true`
+
+Without that variable the workflow skips itself, so there are no failing runs before setup.
+
+Cost: each product takes about 12–15 s in the browser. The worker also takes products due within the next 3 hours, so runs cluster together, and a handful of Zara products fits easily in the 2,000 free Actions minutes/month.
 
 ## Phone setup
 
@@ -33,7 +68,10 @@ npm run dev:netlify    # app + functions + blobs on http://localhost:8888
 npm test
 ```
 
-To run the cron once locally: `npx netlify-cli functions:invoke check-prices --port 8888`.
+- **Run the cron once:** `npx netlify-cli functions:invoke check-prices --port 8888`
+- **Run the browser worker against the local API:**
+  1. Install Chromium once: `npx playwright install chromium`
+  2. Run `PRICE_CHECK_URL=http://localhost:8888 APP_SECRET=… npx tsx worker/run.ts`
 
 ## How prices are found
 
@@ -52,4 +90,11 @@ Safety nets:
 - **Correct the price when adding:** the add screen has *Not the right price?*. Type what you see and the app learns where that number lives.
 - **Big jumps are confirmed first:** a change of more than 70% must be seen on two checks in a row before any alert.
 
-**Limit:** some shops block server requests with bot protection before any HTML arrives. As of Sept 2026 that includes Zara, H&M, Mytheresa, Pull&Bear and YOOX. These show *"This shop blocks automatic price checks"*.
+## Shop compatibility (tested Sept 2026)
+
+| Shop | Checked by |
+|---|---|
+| Max Mara, Intrend, Amazon, IKEA, Zalando, Nike, ASOS, Mango, Shopify stores | Netlify fetch |
+| Zara, Pull&Bear | GitHub browser worker |
+| H&M | Home connection only (blocks cloud IPs) |
+| Mytheresa, YOOX | Not trackable (block even real browsers) |

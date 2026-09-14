@@ -45,6 +45,18 @@ export function ProductCard({ product, onMore, style }: { product: Product; onMo
           </div>
           <h2 className="mt-0.5 line-clamp-2 text-[15px] leading-snug font-medium">{product.title}</h2>
 
+          {product.pending ? (
+            <div className="mt-auto pt-2">
+              {product.lastError ? (
+                <span className="text-xs text-warn">⚠ {product.lastError}</span>
+              ) : (
+                <span className="flex items-center gap-2 text-sm text-muted" role="status">
+                  <span className="size-2 animate-pulse rounded-full bg-drop" aria-hidden="true" />
+                  Getting the price…
+                </span>
+              )}
+            </div>
+          ) : (
           <div className="mt-auto flex items-end justify-between gap-2 pt-2">
             <div className="flex min-w-0 flex-col">
               <div className="flex items-baseline gap-2">
@@ -75,6 +87,7 @@ export function ProductCard({ product, onMore, style }: { product: Product; onMo
             </div>
             <Sparkline points={product.history} className="mb-0.5 shrink-0" />
           </div>
+          )}
         </div>
       </a>
       <button

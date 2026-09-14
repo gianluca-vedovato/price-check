@@ -1,39 +1,30 @@
-import type { Product } from '../../shared/types'
-import { priceDropPayload, sendToAll } from './push'
-import { applyCheck, needsConfirmation, shouldNotify } from './rules'
+import type { CheckOutcome, Product, Route } from '../../shared/types'
+import { BLOCKED_MESSAGE, FetchError } from './fetchPage'
+import { browserWorkerEnabled } from './github'
+import { applyOutcome, type Transition } from './outcome'
+import { sendToAll } from './push'
 import { scrape } from './scrape'
 import { saveProduct } from './store'
 
-export type CheckResult = { product: Product; notified: boolean }
+/** Checks a product with a plain server request (the Netlify route). */
+export async function checkProduct(product: Product, now = Date.now()): Promise<Transition> {
+  return commitOutcome(product, await fetchOutcome(product.url, product.locator), 'fetch', now)
+}
 
-/** Fetches the product page, updates the stored product and sends an alert if the rule matches. */
-export async function checkProduct(product: Product, now = Date.now()): Promise<CheckResult> {
+export async function fetchOutcome(url: string, locator?: string): Promise<CheckOutcome> {
   try {
-    const { data } = await scrape(product.url, product.locator)
-    if (!data.price) throw new Error('Price not found on the page anymore')
-
-    if (needsConfirmation(product, data.price)) {
-      // Keep the old price and verify the jump on the next run before alerting.
-      const updated: Product = { ...product, pendingPrice: data.price, lastCheckedAt: now, lastError: undefined }
-      await saveProduct(updated)
-      return { product: updated, notified: false }
-    }
-
-    const previous = product.lastPrice
-    const notify = shouldNotify(product, data.price)
-    let updated = applyCheck(product, data.price, now, notify)
-    if (!updated.image && data.image) updated = { ...updated, image: data.image }
-    await saveProduct(updated)
-
-    if (notify) await sendToAll(priceDropPayload(updated, previous, data.price))
-    return { product: updated, notified: notify }
+    const { data } = await scrape(url, locator)
+    return { ok: true, price: data.price, currency: data.currency, title: data.title, image: data.image, locator: data.locator }
   } catch (e) {
-    const updated: Product = {
-      ...product,
-      lastCheckedAt: now,
-      lastError: e instanceof Error ? e.message : 'Check failed',
-    }
-    await saveProduct(updated)
-    return { product: updated, notified: false }
+    const message = e instanceof Error ? e.message : 'Check failed'
+    return { ok: false, blocked: e instanceof FetchError && message === BLOCKED_MESSAGE, message }
   }
+}
+
+/** Applies a check outcome, saves the product and sends any notification. */
+export async function commitOutcome(product: Product, outcome: CheckOutcome, via: Route, now = Date.now()): Promise<Transition> {
+  const transition = applyOutcome(product, outcome, via, now, browserWorkerEnabled())
+  await saveProduct(transition.product)
+  if (transition.push) await sendToAll(transition.push)
+  return transition
 }

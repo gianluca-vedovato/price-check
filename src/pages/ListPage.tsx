@@ -40,6 +40,14 @@ export function ListPage() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [refresh])
 
+  // While the browser worker is fetching a price, refresh quietly so it appears without a reload.
+  const waiting = products.some((p) => (p.pending && !p.lastError) || p.checkRequested)
+  useEffect(() => {
+    if (!waiting) return
+    const timer = window.setInterval(() => document.visibilityState === 'visible' && refresh(), 15_000)
+    return () => window.clearInterval(timer)
+  }, [waiting, refresh])
+
   const sorted = useMemo(
     () => [...products].sort((a, b) => dropPercent(b) - dropPercent(a) || b.createdAt - a.createdAt),
     [products],
@@ -153,8 +161,13 @@ export function ListPage() {
           try {
             const updated = await api.check(product.id)
             replace(updated)
-            setEditing(updated)
-            toast(updated.lastError ? 'Check failed' : 'Price is up to date')
+            if (updated.checkRequested || updated.route === 'browser') {
+              setEditing(null)
+              toast('Checking in a real browser, about 2 minutes')
+            } else {
+              setEditing(updated)
+              toast(updated.lastError ? 'Check failed' : 'Price is up to date')
+            }
           } catch (e) {
             toast(e instanceof Error ? e.message : 'Check failed')
           }

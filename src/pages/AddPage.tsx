@@ -17,10 +17,12 @@ type State =
 export function AddPage() {
   const [params] = useSearchParams()
   const url = extractUrl(params.get('url'), params.get('text'), params.get('title'))
-  return url ? <AddForm key={url} url={url} /> : <NoLink />
+  // Android shares the page title; it names the product while a slow shop's price is being fetched.
+  const shareTitle = params.get('title')?.trim()
+  return url ? <AddForm key={url} url={url} shareTitle={shareTitle && !extractUrl(shareTitle) ? shareTitle : undefined} /> : <NoLink />
 }
 
-function AddForm({ url }: { url: string }) {
+function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
   const navigate = useNavigate()
   const priceId = useId()
   const [state, setState] = useState<State>({ status: 'loading' })
@@ -30,7 +32,7 @@ function AddForm({ url }: { url: string }) {
   const [correcting, setCorrecting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
+  const [done, setDone] = useState<'tracked' | 'pending' | null>(null)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
@@ -40,7 +42,7 @@ function AddForm({ url }: { url: string }) {
       .preview(url)
       .then((preview) => {
         if (cancelled) return
-        if (preview.error && !preview.title) return setState({ status: 'failed', message: preview.error })
+        if (preview.error && !preview.browserCheck) return setState({ status: 'failed', message: preview.error })
         setState({ status: 'ready', preview })
         if (preview.price) setRule((r) => ({ ...r, cap: defaultCap(preview.price!) }))
       })
@@ -58,13 +60,15 @@ function AddForm({ url }: { url: string }) {
   }, [url, attempt, navigate])
 
   const preview = state.status === 'ready' ? state.preview : undefined
+  // The shop blocks quick checks; the browser worker will fetch the price after saving.
+  const slow = Boolean(preview?.browserCheck)
   const typedPrice = parsePrice(manualPrice)
   // Asking for the price when none was found, or when the user says the detected one is wrong.
-  const askingPrice = Boolean(preview && (!preview.price || correcting))
+  const askingPrice = Boolean(preview && !slow && (!preview.price || correcting))
   const price = askingPrice ? typedPrice : preview?.price
   const cap = parseCap(rule)
   const canTrack =
-    state.status === 'ready' && !saving && price !== undefined && (rule.type === 'drop' || cap !== undefined)
+    state.status === 'ready' && !saving && (price !== undefined || slow) && (rule.type === 'drop' || cap !== undefined)
 
   // Keep the target in sync once the user tells us the price.
   useEffect(() => {
@@ -76,14 +80,15 @@ function AddForm({ url }: { url: string }) {
     setSaving(true)
     setSaveError(null)
     try {
-      await api.create({
+      const product = await api.create({
         url,
         rule: rule.type === 'below' && cap ? { type: 'below', cap } : { type: 'drop' },
         intervalHours: interval,
         manualPrice: askingPrice ? typedPrice : undefined,
+        title: shareTitle,
       })
       vibrate([10, 40, 20])
-      setDone(true)
+      setDone(product.pending ? 'pending' : 'tracked')
       // Opened from the iOS Shortcut in Safari: stay on the success screen, there's nowhere to "go back" to.
       if (!(isIOS && !isStandalone)) setTimeout(() => navigate('/', { replace: true }), 1100)
     } catch (e) {
@@ -92,7 +97,7 @@ function AddForm({ url }: { url: string }) {
     }
   }
 
-  if (done) return <Success fromSafari={isIOS && !isStandalone} />
+  if (done) return <Success fromSafari={isIOS && !isStandalone} pending={done === 'pending'} />
 
   const currency = preview?.currency ?? 'EUR'
 
@@ -143,8 +148,20 @@ function AddForm({ url }: { url: string }) {
               )}
               <div className="p-4">
                 <p className="text-[13px] text-muted">{hostOf(url)}</p>
-                <h2 className="mt-0.5 line-clamp-3 text-[17px] leading-snug font-medium">{preview.title ?? url}</h2>
-                {!askingPrice && preview.price ? (
+                <h2 className="mt-0.5 line-clamp-3 text-[17px] leading-snug font-medium">
+                  {shareTitle ?? preview.title ?? `Product on ${hostOf(url)}`}
+                </h2>
+                {slow ? (
+                  <div className="mt-3 flex gap-3 rounded-2xl bg-sunken p-3 text-sm leading-relaxed">
+                    <span aria-hidden="true" className="text-lg leading-6">⏳</span>
+                    <p>
+                      <span className="font-medium text-ink">{hostOf(url)} hides prices from quick checks.</span>{' '}
+                      <span className="text-muted">
+                        We’ll open it in a real browser and send you a notification with the price in about 2 minutes.
+                      </span>
+                    </p>
+                  </div>
+                ) : !askingPrice && preview.price ? (
                   <div className="mt-2 flex items-end justify-between gap-3">
                     <p className="tabular font-display text-[34px] leading-none font-bold tracking-tight">
                       {formatPrice(preview.price, currency)}
@@ -238,7 +255,7 @@ function PreviewSkeleton({ host }: { host: string }) {
   )
 }
 
-function Success({ fromSafari }: { fromSafari: boolean }) {
+function Success({ fromSafari, pending }: { fromSafari: boolean; pending: boolean }) {
   return (
     <div className="grid min-h-dvh place-items-center px-6 text-center" role="status">
       <div className="flex flex-col items-center">
@@ -248,8 +265,11 @@ function Success({ fromSafari }: { fromSafari: boolean }) {
           </svg>
         </div>
         <h1 className="mt-6 font-display text-2xl font-bold">Tracking it</h1>
-        <p className="mt-2 text-[15px] text-muted">
-          {fromSafari ? 'You’ll get a notification when the price drops. You can close this tab.' : 'We’ll let you know when it drops.'}
+        <p className="mt-2 max-w-xs text-[15px] text-muted">
+          {pending
+            ? 'You’ll get a notification with the current price in about 2 minutes.'
+            : 'We’ll let you know when it drops.'}
+          {fromSafari && ' You can close this tab.'}
         </p>
         {fromSafari && (
           <Link to="/" replace className="mt-6 text-[15px] font-semibold underline underline-offset-4">

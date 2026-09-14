@@ -39,6 +39,6 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ['netlify/**/*.test.ts', 'src/**/*.test.ts'],
+    include: ['netlify/**/*.test.ts', 'src/**/*.test.ts', 'shared/**/*.test.ts'],
   },
 })

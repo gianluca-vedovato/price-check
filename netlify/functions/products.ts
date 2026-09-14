@@ -1,9 +1,11 @@
 import type { Config, Context } from '@netlify/functions'
 import { randomUUID } from 'node:crypto'
-import { INTERVALS, type CreateProductInput, type Product, type Rule, type UpdateProductInput } from '../../shared/types'
+import { hostOf, titleFromUrl } from '../../shared/format'
+import { INTERVALS, type CreateProductInput, type IntervalHours, type Product, type Rule, type UpdateProductInput } from '../../shared/types'
 import { checkProduct } from '../lib/checkProduct'
 import { learnLocator } from '../lib/extract'
-import { FetchError, normalizeUrl } from '../lib/fetchPage'
+import { BLOCKED_MESSAGE, FetchError, normalizeUrl } from '../lib/fetchPage'
+import { browserWorkerEnabled, dispatchBrowserWorker } from '../lib/github'
 import { error, json, requireKey } from '../lib/http'
 import { scrape, type Scraped } from '../lib/scrape'
 import { deleteProduct, getProduct, listProducts, saveProduct } from '../lib/store'
@@ -23,7 +25,18 @@ export default async (req: Request, context: Context) => {
   const product = await getProduct(id)
   if (!product) return error('Product not found', 404)
 
-  if (action === 'check' && req.method === 'POST') return json((await checkProduct(product)).product)
+  if (action === 'check' && req.method === 'POST') {
+    if (product.route === 'browser') {
+      // Browser checks run on GitHub; flag it and start the worker.
+      const queued = { ...product, checkRequested: true, unsupported: undefined }
+      await saveProduct(queued)
+      await dispatchBrowserWorker()
+      return json(queued, 202)
+    }
+    const { product: checked, escalated } = await checkProduct(product)
+    if (escalated) await dispatchBrowserWorker()
+    return json(checked, escalated ? 202 : 200)
+  }
   if (action) return error('Not found', 404)
 
   if (req.method === 'GET') return json(product)
@@ -52,6 +65,8 @@ async function create(input: CreateProductInput): Promise<Response> {
   try {
     page = await scrape(url)
   } catch (e) {
+    const blocked = e instanceof FetchError && e.message === BLOCKED_MESSAGE
+    if (blocked && browserWorkerEnabled()) return createPending(url, rule, intervalHours, input.title)
     return error(e instanceof FetchError ? e.message : 'Could not load the page', 422)
   }
 
@@ -93,13 +108,45 @@ async function create(input: CreateProductInput): Promise<Response> {
   return json(product, existing ? 200 : 201)
 }
 
+/** A shop that blocks server requests: save it now and let the browser worker fetch the first price. */
+async function createPending(url: string, rule: Rule, intervalHours: IntervalHours, shareTitle?: string): Promise<Response> {
+  const existing = (await listProducts()).find((p) => p.url === url)
+  if (existing && !existing.pending) {
+    const updated: Product = { ...existing, rule, intervalHours, route: 'browser', checkRequested: true }
+    await saveProduct(updated)
+    await dispatchBrowserWorker()
+    return json(updated, 202)
+  }
+  const now = Date.now()
+  const title = shareTitle?.trim() && !/^https?:\/\//.test(shareTitle) ? shareTitle.trim() : undefined
+  const product: Product = {
+    id: existing?.id ?? randomUUID(),
+    url,
+    title: title ?? titleFromUrl(url) ?? `Product on ${hostOf(url)}`,
+    rule,
+    intervalHours,
+    addedPrice: 0,
+    lastPrice: 0,
+    lowestPrice: 0,
+    history: [],
+    lastCheckedAt: 0,
+    createdAt: existing?.createdAt ?? now,
+    route: 'browser',
+    pending: true,
+  }
+  await saveProduct(product)
+  await dispatchBrowserWorker()
+  return json(product, 202)
+}
+
 async function update(product: Product, input: UpdateProductInput): Promise<Product> {
   const next: Product = { ...product }
   if (input.intervalHours && INTERVALS.includes(input.intervalHours)) next.intervalHours = input.intervalHours
   const rule = input.rule && validRule(input.rule)
   if (rule) {
     next.rule = rule
-    next.lastNotifiedPrice = rule.type === 'below' && product.lastPrice <= rule.cap ? product.lastPrice : undefined
+    next.lastNotifiedPrice =
+      !product.pending && rule.type === 'below' && product.lastPrice <= rule.cap ? product.lastPrice : undefined
   }
   await saveProduct(next)
   return next

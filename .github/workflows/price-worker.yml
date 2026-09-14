@@ -1,0 +1,50 @@
+name: Price worker
+
+# Checks products from shops that block plain server requests, using a real browser.
+# Netlify starts this workflow when such a product is added or due; the schedule is only a safety net.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 */6 * * *'
+
+# At most one run at a time, plus one queued, however often Netlify dispatches.
+concurrency:
+  group: price-worker
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PRICE_CHECK_URL: ${{ secrets.PRICE_CHECK_URL }}
+      APP_SECRET: ${{ secrets.APP_SECRET }}
+    # Stay quiet (no failed runs every 6h) until the repository secrets are set.
+    if: ${{ vars.WORKER_ENABLED == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache Chromium
+        id: browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium
+        if: steps.browsers.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system libraries
+        if: steps.browsers.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Check prices
+        run: npx tsx worker/run.ts

@@ -23,7 +23,7 @@ export function EditSheet({ product, onClose, onSave, onCheck, onDelete }: Props
     setRule(
       product.rule.type === 'below'
         ? { type: 'below', cap: String(product.rule.cap).replace('.', ',') }
-        : { type: 'drop', cap: defaultCap(product.lastPrice) },
+        : { type: 'drop', cap: product.pending ? '' : defaultCap(product.lastPrice) },
     )
     setInterval(product.intervalHours)
   }, [product])
@@ -42,7 +42,10 @@ export function EditSheet({ product, onClose, onSave, onCheck, onDelete }: Props
             <div className="min-w-0">
               <p className="truncate text-[15px] font-medium">{product.title}</p>
               <p className="tabular text-sm text-muted">
-                Now {formatPrice(product.lastPrice, product.currency)} · lowest {formatPrice(product.lowestPrice, product.currency)}
+                {product.pending
+                  ? 'Getting the price…'
+                  : `Now ${formatPrice(product.lastPrice, product.currency)} · lowest ${formatPrice(product.lowestPrice, product.currency)}`}
+                {product.route === 'browser' && ' · checked in a browser'}
               </p>
             </div>
           </div>
@@ -51,7 +54,12 @@ export function EditSheet({ product, onClose, onSave, onCheck, onDelete }: Props
             <p className="rounded-2xl bg-sunken px-4 py-3 text-sm text-warn">⚠ Last check failed: {product.lastError}</p>
           )}
 
-          <RuleControl value={rule} onChange={setRule} currencySymbol={currencySymbol(product.currency)} currentPrice={product.lastPrice} />
+          <RuleControl
+            value={rule}
+            onChange={setRule}
+            currencySymbol={currencySymbol(product.currency)}
+            currentPrice={product.pending ? undefined : product.lastPrice}
+          />
           <IntervalChips value={interval} onChange={setInterval} />
 
           <button

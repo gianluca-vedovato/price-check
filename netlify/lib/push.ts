@@ -1,6 +1,4 @@
 import webpush from 'web-push'
-import type { Product } from '../../shared/types'
-import { formatPrice } from '../../shared/format'
 import { getSubscriptions, saveSubscriptions } from './store'
 
 export type PushPayload = { title: string; body: string; image?: string; url: string; tag?: string }
@@ -31,18 +29,4 @@ export async function sendToAll(payload: PushPayload): Promise<number> {
   )
   if (expired.size) await saveSubscriptions(subs.filter((s) => !expired.has(s.endpoint)))
   return sent
-}
-
-export function priceDropPayload(product: Product, previous: number, next: number): PushPayload {
-  const pct = Math.round(((previous - next) / previous) * 100)
-  const was = pct > 0 ? `was ${formatPrice(previous, product.currency)}, −${pct}%` : ''
-  const target = product.rule.type === 'below' ? `under ${formatPrice(product.rule.cap, product.currency)}` : ''
-  const detail = [was, target].filter(Boolean).join(' · ')
-  return {
-    title: `↓ ${formatPrice(next, product.currency)}${detail ? `  (${detail})` : ''}`,
-    body: product.title,
-    image: product.image,
-    url: product.url,
-    tag: product.id,
-  }
 }
