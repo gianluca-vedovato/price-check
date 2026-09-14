@@ -5,7 +5,7 @@ import { formatPrice, hostOf } from '../../shared/format'
 import { DEFAULT_INTERVAL, type IntervalHours, type Preview } from '../../shared/types'
 import { currencySymbol, defaultCap, IntervalChips, parseCap, RuleControl, type RuleDraft } from '../components/AlertControls'
 import { IconBack, IconExternal } from '../components/icons'
-import { api, ApiError } from '../lib/api'
+import { api } from '../lib/api'
 import { extractUrl } from '../lib/extractUrl'
 import { isIOS, isStandalone, vibrate } from '../lib/platform'
 
@@ -48,16 +48,12 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
       })
       .catch((e) => {
         if (cancelled) return
-        if (e instanceof ApiError && e.status === 401) {
-          navigate(`/setup?next=${encodeURIComponent(location.pathname + location.search)}`, { replace: true })
-          return
-        }
-        setState({ status: 'failed', message: e instanceof Error ? e.message : 'Could not load the page' })
+        setState({ status: 'failed', message: e instanceof Error ? e.message : 'Non riesco a caricare la pagina' })
       })
     return () => {
       cancelled = true
     }
-  }, [url, attempt, navigate])
+  }, [url, attempt])
 
   const preview = state.status === 'ready' ? state.preview : undefined
   // The shop blocks quick checks; the browser worker will fetch the price after saving.
@@ -92,7 +88,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
       // Opened from the iOS Shortcut in Safari: stay on the success screen, there's nowhere to "go back" to.
       if (!(isIOS && !isStandalone)) setTimeout(() => navigate('/', { replace: true }), 1100)
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'Couldn’t save')
+      setSaveError(e instanceof Error ? e.message : 'Salvataggio non riuscito')
       setSaving(false)
     }
   }
@@ -104,10 +100,10 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
   return (
     <div className="mx-auto flex min-h-dvh max-w-xl flex-col px-4 pt-safe">
       <header className="flex items-center gap-1 pt-1 pb-3">
-        <Link to="/" aria-label="Back to list" className="-ml-2 grid size-11 place-items-center rounded-full active:bg-sunken">
+        <Link to="/" aria-label="Torna alla lista" className="-ml-2 grid size-11 place-items-center rounded-full active:bg-sunken">
           <IconBack />
         </Link>
-        <span className="text-[17px] font-semibold">Track price</span>
+        <span className="text-[17px] font-semibold">Segui prezzo</span>
       </header>
 
       <main className="flex flex-1 flex-col gap-6 pb-32">
@@ -116,7 +112,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
         {state.status === 'failed' && (
           <div className="animate-rise rounded-3xl bg-surface p-5">
             <p className="text-sm text-muted">{hostOf(url)}</p>
-            <h2 className="mt-1 font-display text-xl font-bold">Couldn’t read this page</h2>
+            <h2 className="mt-1 font-display text-xl font-bold">Non riesco a leggere questa pagina</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-muted">{state.message}</p>
             <div className="mt-4 flex gap-2">
               <button
@@ -124,7 +120,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
                 onClick={() => setAttempt((a) => a + 1)}
                 className="h-12 flex-1 rounded-2xl bg-accent font-semibold text-on-accent active:scale-[0.98]"
               >
-                Try again
+                Riprova
               </button>
               <a
                 href={url}
@@ -132,7 +128,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
                 rel="noopener noreferrer"
                 className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-sunken font-semibold"
               >
-                Open <IconExternal width={18} height={18} />
+                Apri <IconExternal width={18} height={18} />
               </a>
             </div>
           </div>
@@ -149,15 +145,15 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
               <div className="p-4">
                 <p className="text-[13px] text-muted">{hostOf(url)}</p>
                 <h2 className="mt-0.5 line-clamp-3 text-[17px] leading-snug font-medium">
-                  {shareTitle ?? preview.title ?? `Product on ${hostOf(url)}`}
+                  {shareTitle ?? preview.title ?? `Prodotto su ${hostOf(url)}`}
                 </h2>
                 {slow ? (
                   <div className="mt-3 flex gap-3 rounded-2xl bg-sunken p-3 text-sm leading-relaxed">
                     <span aria-hidden="true" className="text-lg leading-6">⏳</span>
                     <p>
-                      <span className="font-medium text-ink">{hostOf(url)} hides prices from quick checks.</span>{' '}
+                      <span className="font-medium text-ink">{hostOf(url)} nasconde i prezzi ai controlli veloci.</span>{' '}
                       <span className="text-muted">
-                        We’ll open it in a real browser and send you a notification with the price in about 2 minutes.
+                        Lo apriremo con un browser vero e ti manderemo una notifica con il prezzo tra circa 2 minuti.
                       </span>
                     </p>
                   </div>
@@ -171,7 +167,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
                       onClick={() => setCorrecting(true)}
                       className="-mr-2 h-10 shrink-0 rounded-xl px-2 text-sm font-medium text-muted underline underline-offset-4 active:bg-sunken"
                     >
-                      Not the right price?
+                      Il prezzo non è giusto?
                     </button>
                   </div>
                 ) : (
@@ -179,8 +175,8 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
                     <div className="flex items-start justify-between gap-2">
                       <label htmlFor={priceId} className="text-sm font-medium">
                         {preview.price
-                          ? 'What price do you see on the site? We’ll watch that one.'
-                          : 'We couldn’t spot the price. What do you see on the site?'}
+                          ? 'Che prezzo vedi sul sito? Seguiremo quello.'
+                          : 'Non abbiamo trovato il prezzo. Che prezzo vedi sul sito?'}
                       </label>
                       {preview.price && (
                         <button
@@ -191,7 +187,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
                           }}
                           className="-mt-1 h-8 shrink-0 rounded-lg px-2 text-sm font-medium text-muted active:bg-line"
                         >
-                          Cancel
+                          Annulla
                         </button>
                       )}
                     </div>
@@ -232,7 +228,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
               onClick={track}
               className="h-14 w-full rounded-2xl bg-accent text-[17px] font-semibold text-on-accent shadow-lg transition active:scale-[0.98] disabled:opacity-35 disabled:shadow-none"
             >
-              {saving ? 'Saving…' : 'Track'}
+              {saving ? 'Salvataggio…' : 'Segui'}
             </button>
           </div>
         </div>
@@ -243,7 +239,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
 
 function PreviewSkeleton({ host }: { host: string }) {
   return (
-    <div className="overflow-hidden rounded-3xl bg-surface" aria-label={`Loading ${host}`}>
+    <div className="overflow-hidden rounded-3xl bg-surface" aria-label={`Caricamento ${host}`}>
       <div className="skeleton h-56" />
       <div className="flex flex-col gap-2.5 p-4">
         <p className="text-[13px] text-muted">{host}</p>
@@ -264,16 +260,16 @@ function Success({ fromSafari, pending }: { fromSafari: boolean; pending: boolea
             <path d="M5 12.5l4.5 4.5L19 7.5" className="check-path stroke-drop" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <h1 className="mt-6 font-display text-2xl font-bold">Tracking it</h1>
+        <h1 className="mt-6 font-display text-2xl font-bold">Fatto, lo seguo</h1>
         <p className="mt-2 max-w-xs text-[15px] text-muted">
           {pending
-            ? 'You’ll get a notification with the current price in about 2 minutes.'
-            : 'We’ll let you know when it drops.'}
-          {fromSafari && ' You can close this tab.'}
+            ? 'Riceverai una notifica con il prezzo attuale tra circa 2 minuti.'
+            : 'Ti avviso quando il prezzo scende.'}
+          {fromSafari && ' Puoi chiudere questa scheda.'}
         </p>
         {fromSafari && (
           <Link to="/" replace className="mt-6 text-[15px] font-semibold underline underline-offset-4">
-            See all prices
+            Vedi tutti i prezzi
           </Link>
         )}
       </div>
@@ -288,10 +284,10 @@ function NoLink() {
   return (
     <div className="mx-auto min-h-dvh max-w-xl px-4 pt-safe">
       <header className="flex items-center gap-1 pt-1 pb-3">
-        <Link to="/" aria-label="Back to list" className="-ml-2 grid size-11 place-items-center rounded-full active:bg-sunken">
+        <Link to="/" aria-label="Torna alla lista" className="-ml-2 grid size-11 place-items-center rounded-full active:bg-sunken">
           <IconBack />
         </Link>
-        <span className="text-[17px] font-semibold">Track price</span>
+        <span className="text-[17px] font-semibold">Segui prezzo</span>
       </header>
       <form
         onSubmit={(e) => {
@@ -301,7 +297,7 @@ function NoLink() {
         className="flex flex-col gap-3"
       >
         <label htmlFor="add-link" className="text-[15px] text-muted">
-          The share didn’t include a link. Paste it here:
+          La condivisione non conteneva un link. Incollalo qui:
         </label>
         <input
           id="add-link"
@@ -313,7 +309,7 @@ function NoLink() {
           className="h-14 rounded-2xl border border-line bg-surface px-4 text-[16px] outline-none focus:border-ink"
         />
         <button type="submit" disabled={!url} className="h-14 rounded-2xl bg-accent font-semibold text-on-accent disabled:opacity-35">
-          Continue
+          Continua
         </button>
       </form>
     </div>

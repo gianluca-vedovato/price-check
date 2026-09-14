@@ -11,13 +11,16 @@ export function error(message: string, status = 400): Response {
   return json({ error: message }, status)
 }
 
-/** Returns an error response when the request doesn't carry the app secret. */
-export function requireKey(req: Request): Response | undefined {
-  const secret = process.env.APP_SECRET
-  if (!secret) return error('APP_SECRET is not configured on the server', 500)
-  const given = req.headers.get('x-app-key') ?? ''
+/**
+ * The app itself has no login. Only the browser worker endpoints are protected,
+ * so nobody can post fake prices or trigger notifications.
+ */
+export function requireWorkerKey(req: Request): Response | undefined {
+  const secret = process.env.WORKER_SECRET
+  if (!secret) return error('WORKER_SECRET is not configured on the server', 500)
+  const given = req.headers.get('x-worker-key') ?? ''
   const a = Buffer.from(given)
   const b = Buffer.from(secret)
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return error('Invalid key', 401)
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return error('Invalid worker key', 401)
   return undefined
 }

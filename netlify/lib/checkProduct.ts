@@ -16,7 +16,7 @@ export async function fetchOutcome(url: string, locator?: string): Promise<Check
     const { data } = await scrape(url, locator)
     return { ok: true, price: data.price, currency: data.currency, title: data.title, image: data.image, locator: data.locator }
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Check failed'
+    const message = e instanceof Error ? e.message : 'Controllo non riuscito'
     return { ok: false, blocked: e instanceof FetchError && message === BLOCKED_MESSAGE, message }
   }
 }

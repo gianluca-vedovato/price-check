@@ -18,7 +18,7 @@ export async function enablePush(): Promise<PushState> {
   if (permission !== 'granted') return permission === 'denied' ? 'denied' : 'off'
 
   const { publicKey } = await api.vapidKey()
-  if (!publicKey) throw new Error('VAPID keys are not configured on the server')
+  if (!publicKey) throw new Error('Le chiavi VAPID non sono configurate sul server')
 
   const reg = await navigator.serviceWorker.ready
   const existing = await reg.pushManager.getSubscription()

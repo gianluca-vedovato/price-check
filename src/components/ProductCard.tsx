@@ -52,7 +52,7 @@ export function ProductCard({ product, onMore, style }: { product: Product; onMo
               ) : (
                 <span className="flex items-center gap-2 text-sm text-muted" role="status">
                   <span className="size-2 animate-pulse rounded-full bg-drop" aria-hidden="true" />
-                  Getting the price…
+                  Sto recuperando il prezzo…
                 </span>
               )}
             </div>
@@ -72,15 +72,15 @@ export function ProductCard({ product, onMore, style }: { product: Product; onMo
               </div>
               <span className={`mt-1 truncate text-xs ${product.lastError ? 'text-warn' : 'text-muted'}`}>
                 {product.lastError ? (
-                  <>⚠ Couldn’t check · {timeAgo(product.lastCheckedAt)}</>
+                  <>⚠ Controllo non riuscito · {timeAgo(product.lastCheckedAt)}</>
                 ) : (
                   <>
-                    {product.rule.type === 'drop' ? 'Any drop' : (
+                    {product.rule.type === 'drop' ? 'Ogni calo' : (
                       <span className={hit ? 'font-semibold text-drop' : ''}>
-                        {hit ? '✓ ' : ''}Below {formatPrice(product.rule.cap, product.currency)}
+                        {hit ? '✓ ' : ''}Sotto {formatPrice(product.rule.cap, product.currency)}
                       </span>
                     )}
-                    {' · '}every {product.intervalHours}h · {timeAgo(product.lastCheckedAt)}
+                    {' · '}ogni {product.intervalHours}h · {timeAgo(product.lastCheckedAt)}
                   </>
                 )}
               </span>
@@ -93,7 +93,7 @@ export function ProductCard({ product, onMore, style }: { product: Product; onMo
       <button
         type="button"
         onClick={onMore}
-        aria-label={`Options for ${product.title}`}
+        aria-label={`Opzioni per ${product.title}`}
         className="absolute top-1.5 right-1.5 grid size-11 place-items-center rounded-full text-muted active:bg-sunken"
       >
         <IconMore />

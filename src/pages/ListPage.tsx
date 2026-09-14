@@ -5,7 +5,7 @@ import { EditSheet } from '../components/EditSheet'
 import { IconClipboard, IconSettings, IconShare } from '../components/icons'
 import { dropPercent, ProductCard } from '../components/ProductCard'
 import { useToast } from '../components/Toast'
-import { api, ApiError, readCache, writeCache } from '../lib/api'
+import { api, readCache, writeCache } from '../lib/api'
 import { extractUrl } from '../lib/extractUrl'
 import { isAndroid, isIOS } from '../lib/platform'
 
@@ -25,13 +25,12 @@ export function ListPage() {
   const refresh = useCallback(async () => {
     try {
       commit(await api.list())
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 401) navigate('/setup', { replace: true })
-      else if (!navigator.onLine) toast('You’re offline, showing saved prices')
+    } catch {
+      if (!navigator.onLine) toast('Sei offline, questi sono gli ultimi prezzi salvati')
     } finally {
       setLoaded(true)
     }
-  }, [commit, navigate, toast])
+  }, [commit, toast])
 
   useEffect(() => {
     refresh()
@@ -56,14 +55,14 @@ export function ListPage() {
   const goAdd = (value: string) => {
     const url = extractUrl(value)
     if (url) navigate(`/add?url=${encodeURIComponent(url)}`)
-    else toast('That doesn’t look like a link')
+    else toast('Questo non sembra un link')
   }
 
   const pasteFromClipboard = async () => {
     try {
       goAdd(await navigator.clipboard.readText())
     } catch {
-      toast('Paste the link in the field')
+      toast('Incolla il link nel campo')
     }
   }
 
@@ -72,8 +71,8 @@ export function ListPage() {
   return (
     <div className="mx-auto min-h-dvh max-w-xl px-4 pt-safe pb-safe">
       <header className="flex items-center justify-between pt-2 pb-4">
-        <h1 className="font-display text-[32px] leading-none font-bold tracking-tight">Prices</h1>
-        <Link to="/setup" aria-label="Settings" className="grid size-11 place-items-center rounded-full text-muted active:bg-sunken">
+        <h1 className="font-display text-[32px] leading-none font-bold tracking-tight">Prezzi</h1>
+        <Link to="/setup" aria-label="Impostazioni" className="grid size-11 place-items-center rounded-full text-muted active:bg-sunken">
           <IconSettings />
         </Link>
       </header>
@@ -86,7 +85,7 @@ export function ListPage() {
         className="mb-5 flex h-14 items-center gap-2 rounded-2xl border border-line bg-surface pr-1.5 pl-4 focus-within:border-ink"
       >
         <label htmlFor="link" className="sr-only">
-          Product link
+          Link del prodotto
         </label>
         <input
           id="link"
@@ -94,7 +93,7 @@ export function ListPage() {
           inputMode="url"
           enterKeyHint="go"
           autoComplete="off"
-          placeholder="Paste a product link"
+          placeholder="Incolla il link di un prodotto"
           value={link}
           onChange={(e) => setLink(e.target.value)}
           onPaste={(e) => {
@@ -108,7 +107,7 @@ export function ListPage() {
         />
         {link ? (
           <button type="submit" className="h-11 rounded-xl bg-accent px-4 text-[15px] font-semibold text-on-accent">
-            Add
+            Aggiungi
           </button>
         ) : (
           'clipboard' in navigator && 'readText' in navigator.clipboard && (
@@ -118,14 +117,14 @@ export function ListPage() {
               className="flex h-11 items-center gap-1.5 rounded-xl bg-sunken px-3 text-[15px] font-semibold active:bg-line"
             >
               <IconClipboard width={18} height={18} />
-              Paste
+              Incolla
             </button>
           )
         )}
       </form>
 
       {!loaded && products.length === 0 ? (
-        <ul className="flex flex-col gap-2.5" aria-label="Loading">
+        <ul className="flex flex-col gap-2.5" aria-label="Caricamento">
           {[0, 1, 2].map((i) => (
             <li key={i} className="skeleton h-[100px] rounded-3xl" />
           ))}
@@ -152,9 +151,9 @@ export function ListPage() {
           try {
             replace(await api.update(product.id, changes))
             setEditing(null)
-            toast('Alert updated')
+            toast('Avviso aggiornato')
           } catch (e) {
-            toast(e instanceof Error ? e.message : 'Couldn’t save')
+            toast(e instanceof Error ? e.message : 'Salvataggio non riuscito')
           }
         }}
         onCheck={async (product) => {
@@ -163,13 +162,13 @@ export function ListPage() {
             replace(updated)
             if (updated.checkRequested || updated.route === 'browser') {
               setEditing(null)
-              toast('Checking in a real browser, about 2 minutes')
+              toast('Controllo con un browser vero, circa 2 minuti')
             } else {
               setEditing(updated)
-              toast(updated.lastError ? 'Check failed' : 'Price is up to date')
+              toast(updated.lastError ? 'Controllo non riuscito' : 'Il prezzo è aggiornato')
             }
           } catch (e) {
-            toast(e instanceof Error ? e.message : 'Check failed')
+            toast(e instanceof Error ? e.message : 'Controllo non riuscito')
           }
         }}
         onDelete={(product) => {
@@ -177,15 +176,15 @@ export function ListPage() {
           commit(products.filter((p) => p.id !== product.id))
           const removal = api.remove(product.id).catch(() => {
             refresh()
-            toast('Couldn’t delete')
+            toast('Eliminazione non riuscita')
           })
-          toast('Removed', {
-            label: 'Undo',
+          toast('Eliminato', {
+            label: 'Annulla',
             run: async () => {
               commit(products)
               // Wait for the delete to land so the restore isn't overwritten by it.
               await removal
-              await api.restore(product).catch(() => toast('Couldn’t restore'))
+              await api.restore(product).catch(() => toast('Ripristino non riuscito'))
             },
           })
         }}
@@ -200,19 +199,17 @@ function EmptyState() {
       <div className="mb-5 grid size-16 place-items-center rounded-3xl bg-surface text-muted">
         <IconShare width={28} height={28} />
       </div>
-      <h2 className="font-display text-xl font-bold">Track your first product</h2>
+      <h2 className="font-display text-xl font-bold">Segui il tuo primo prodotto</h2>
       <p className="mt-2 max-w-xs text-[15px] leading-relaxed text-muted">
         {isIOS
-          ? 'In Safari, tap Share → “Track price”. Or paste a link above.'
+          ? 'In Safari tocca Condividi → «Segui prezzo». Oppure incolla un link qui sopra.'
           : isAndroid
-            ? 'In any app, tap Share → Prices. Or paste a link above.'
-            : 'Paste a product link above, or use the bookmarklet from Settings.'}
+            ? 'Da qualsiasi app tocca Condividi → Prezzi. Oppure incolla un link qui sopra.'
+            : 'Incolla qui sopra il link di un prodotto, oppure usa il pulsante per i preferiti dalle Impostazioni.'}
       </p>
-      {isIOS && (
-        <Link to="/setup" className="mt-4 text-[15px] font-semibold underline underline-offset-4">
-          Set up the share button
-        </Link>
-      )}
+      <Link to="/setup" className="mt-4 text-[15px] font-semibold underline underline-offset-4">
+        {isIOS || isAndroid ? 'Configura il pulsante Condividi e le notifiche' : 'Configura le notifiche'}
+      </Link>
     </div>
   )
 }

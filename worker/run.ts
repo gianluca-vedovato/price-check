@@ -2,27 +2,27 @@
  * Browser worker: checks products whose shops block plain server requests.
  * Runs in GitHub Actions (see .github/workflows/price-worker.yml) or locally:
  *
- *   PRICE_CHECK_URL=http://localhost:8888 APP_SECRET=… npx tsx worker/run.ts
+ *   PRICE_CHECK_URL=http://localhost:8888 WORKER_SECRET=… npx tsx worker/run.ts
  */
 import { chromium, type Browser } from 'playwright'
 import type { CheckOutcome, WorkerJob } from '../shared/types'
 import { extract } from '../netlify/lib/extract'
-import { BLOCKED_MESSAGE, looksBlocked } from '../netlify/lib/fetchPage'
+import { BLOCKED_MESSAGE, looksBlocked, shopErrorMessage } from '../netlify/lib/fetchPage'
 
 const API = (process.env.PRICE_CHECK_URL ?? '').replace(/\/$/, '')
-const KEY = process.env.APP_SECRET ?? ''
+const KEY = process.env.WORKER_SECRET ?? ''
 const CONCURRENCY = 2
 const MAX_ROUNDS = 5
 
 if (!API || !KEY) {
-  console.error('Set PRICE_CHECK_URL and APP_SECRET')
+  console.error('Set PRICE_CHECK_URL and WORKER_SECRET')
   process.exit(1)
 }
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     ...init,
-    headers: { 'content-type': 'application/json', 'x-app-key': KEY, ...init.headers },
+    headers: { 'content-type': 'application/json', 'x-worker-key': KEY, ...init.headers },
   })
   if (!res.ok) throw new Error(`${init.method ?? 'GET'} ${path} → ${res.status} ${await res.text()}`)
   return res.json() as Promise<T>
@@ -45,7 +45,7 @@ async function check(browser: Browser, job: WorkerJob): Promise<CheckOutcome> {
     if (res?.status() === 403 || res?.status() === 429 || looksBlocked(html)) {
       return { ok: false, blocked: true, message: BLOCKED_MESSAGE }
     }
-    if (res && res.status() >= 400) return { ok: false, blocked: false, message: `The shop answered with an error (${res.status()})` }
+    if (res && res.status() >= 400) return { ok: false, blocked: false, message: shopErrorMessage(res.status()) }
     const data = extract(html, page.url(), job.locator)
     return { ok: true, price: data.price, currency: data.currency, title: data.title, image: data.image, locator: data.locator }
   } catch (e) {

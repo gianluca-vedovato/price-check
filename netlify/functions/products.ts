@@ -6,14 +6,11 @@ import { checkProduct } from '../lib/checkProduct'
 import { learnLocator } from '../lib/extract'
 import { BLOCKED_MESSAGE, FetchError, normalizeUrl } from '../lib/fetchPage'
 import { browserWorkerEnabled, dispatchBrowserWorker } from '../lib/github'
-import { error, json, requireKey } from '../lib/http'
+import { error, json } from '../lib/http'
 import { scrape, type Scraped } from '../lib/scrape'
 import { deleteProduct, getProduct, listProducts, saveProduct } from '../lib/store'
 
 export default async (req: Request, context: Context) => {
-  const denied = requireKey(req)
-  if (denied) return denied
-
   const { id, action } = context.params
 
   if (!id) {
@@ -23,7 +20,7 @@ export default async (req: Request, context: Context) => {
   }
 
   const product = await getProduct(id)
-  if (!product) return error('Product not found', 404)
+  if (!product) return error('Prodotto non trovato', 404)
 
   if (action === 'check' && req.method === 'POST') {
     if (product.route === 'browser') {
@@ -56,9 +53,9 @@ export default async (req: Request, context: Context) => {
 
 async function create(input: CreateProductInput): Promise<Response> {
   const url = normalizeUrl(input.url ?? '')
-  if (!url) return error('That doesn’t look like a link')
+  if (!url) return error('Questo non sembra un link')
   const rule = validRule(input.rule)
-  if (!rule) return error('Invalid alert rule')
+  if (!rule) return error('Regola di avviso non valida')
   const intervalHours = INTERVALS.includes(input.intervalHours) ? input.intervalHours : 6
 
   let page: Scraped
@@ -67,7 +64,7 @@ async function create(input: CreateProductInput): Promise<Response> {
   } catch (e) {
     const blocked = e instanceof FetchError && e.message === BLOCKED_MESSAGE
     if (blocked && browserWorkerEnabled()) return createPending(url, rule, intervalHours, input.title)
-    return error(e instanceof FetchError ? e.message : 'Could not load the page', 422)
+    return error(e instanceof FetchError ? e.message : 'Non riesco a caricare la pagina', 422)
   }
 
   const { data } = page
@@ -78,11 +75,11 @@ async function create(input: CreateProductInput): Promise<Response> {
     // The user corrected or supplied the price: learn where that number lives on the page.
     locator = learnLocator(page.html, input.manualPrice)
     if (!locator) {
-      return error('Couldn’t find that price on the page. The shop may load prices after the page opens.', 422)
+      return error('Non trovo quel prezzo nella pagina. Il negozio potrebbe caricare i prezzi dopo l’apertura.', 422)
     }
     price = input.manualPrice
   }
-  if (!price) return json({ error: 'Price not found', needsPrice: true }, 422)
+  if (!price) return json({ error: 'Prezzo non trovato', needsPrice: true }, 422)
 
   const existing = (await listProducts()).find((p) => p.url === url)
   const now = Date.now()
@@ -122,7 +119,7 @@ async function createPending(url: string, rule: Rule, intervalHours: IntervalHou
   const product: Product = {
     id: existing?.id ?? randomUUID(),
     url,
-    title: title ?? titleFromUrl(url) ?? `Product on ${hostOf(url)}`,
+    title: title ?? titleFromUrl(url) ?? `Prodotto su ${hostOf(url)}`,
     rule,
     intervalHours,
     addedPrice: 0,

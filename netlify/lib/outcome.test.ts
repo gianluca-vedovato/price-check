@@ -25,7 +25,7 @@ const product = (overrides: Partial<Product> = {}): Product => ({
 const pending = (overrides: Partial<Product> = {}) =>
   product({ addedPrice: 0, lastPrice: 0, lowestPrice: 0, history: [], lastCheckedAt: 0, route: 'browser', pending: true, ...overrides })
 
-const blocked = { ok: false as const, blocked: true, message: 'This shop blocks automatic price checks' }
+const blocked = { ok: false as const, blocked: true, message: 'Questo negozio blocca i controlli automatici dei prezzi' }
 
 describe('applyOutcome: Netlify fetch', () => {
   it('moves a blocked product to the browser worker without marking it failed', () => {
@@ -70,14 +70,14 @@ describe('applyOutcome: browser worker', () => {
     })
     expect(next.pending).toBeUndefined()
     expect(next.lastNotifiedPrice).toBeUndefined()
-    expect(push?.title).toMatch(/^Tracking at 39,95\s€$/)
-    expect(push?.body).toMatch(/alert below 30\s€/)
+    expect(push?.title).toMatch(/^Lo seguo a 39,95\s€$/)
+    expect(push?.body).toMatch(/avviso sotto 30\s€/)
     expect(needsBrowserCheck(next, NOW)).toBe(false)
   })
 
   it('says so when the first price is already below the target, without a second alert later', () => {
     const { product: next, push } = applyOutcome(pending({ rule: { type: 'below', cap: 45 } }), { ok: true, price: 39.95 }, 'browser', NOW, true)
-    expect(push?.title).toContain('Already below your target')
+    expect(push?.title).toContain('Già sotto il tuo obiettivo')
     expect(next.lastNotifiedPrice).toBe(39.95)
   })
 
@@ -90,7 +90,7 @@ describe('applyOutcome: browser worker', () => {
 
     const second = applyOutcome(first.product, blocked, 'browser', NOW + HOUR, true)
     expect(second.product).toMatchObject({ unsupported: true, lastError: BROWSER_BLOCKED_MESSAGE })
-    expect(second.push?.title).toBe('Can’t track this product')
+    expect(second.push?.title).toBe('Non posso seguire questo prodotto')
     expect(needsBrowserCheck(second.product, NOW + HOUR)).toBe(false)
   })
 

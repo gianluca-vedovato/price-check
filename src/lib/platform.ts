@@ -26,9 +26,10 @@ export function vibrate(pattern: number | number[]) {
 
 export function timeAgo(ts: number): string {
   const minutes = Math.round((Date.now() - ts) / 60_000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
+  if (minutes < 1) return 'adesso'
+  if (minutes < 60) return `${minutes} min fa`
   const hours = Math.round(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.round(hours / 24)}d ago`
+  if (hours < 24) return `${hours}h fa`
+  const days = Math.round(hours / 24)
+  return days === 1 ? 'ieri' : `${days} giorni fa`
 }

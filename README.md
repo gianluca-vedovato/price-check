@@ -34,19 +34,21 @@ product ──▶ │ plain fetch → extract → rules → push           │
 1. Create a Netlify site from this repo (the build settings come from `netlify.toml`).
 2. Generate push keys: `npm run vapid`
 3. In Netlify → Site configuration → Environment variables, add:
-   - `APP_SECRET`: any long random string
    - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`: from step 2
    - `VAPID_SUBJECT`: `mailto:you@example.com`
    - `GITHUB_REPO`: `gianluca-vedovato-24/price-check`
    - `GITHUB_TOKEN`: a [fine-grained token](https://github.com/settings/personal-access-tokens/new) with access to this repository only and the permission **Actions: Read and write**
-4. Redeploy, open the site, paste `APP_SECRET` once.
+   - `WORKER_SECRET`: any long random string (shared only between Netlify and the GitHub worker)
+4. Redeploy and open the site.
+
+**No login:** the app has no password. Anyone who knows the site URL can see and edit your list, so pick a site name that's hard to guess. Only the worker endpoints (`/api/worker/*`) are protected, so nobody can post fake prices. The API also refuses to fetch local or private network addresses.
 
 **GitHub (browser worker)**
 
 In the repo → Settings → Secrets and variables → Actions:
 - **Secrets:**
   - `PRICE_CHECK_URL`: your Netlify site URL
-  - `APP_SECRET`: same value as on Netlify
+  - `WORKER_SECRET`: same value as on Netlify
 - **Variable:** `WORKER_ENABLED` = `true`
 
 Without that variable the workflow skips itself, so there are no failing runs before setup.
@@ -55,8 +57,10 @@ Cost: each product takes about 12–15 s in the browser. The worker also takes p
 
 ## Phone setup
 
-- **iPhone:** Safari → Share → *Add to Home Screen*. Open the app from the Home Screen, paste the key, and turn on notifications (iOS only allows push for Home Screen apps). Then follow the Settings page to create the *Track price* Shortcut for Safari's share sheet.
-- **Android:** Chrome → *Install app*. **Prices** then appears in every app's share menu.
+The app UI is in Italian.
+
+- **iPhone:** Safari → Condividi → *Aggiungi alla schermata Home*. Open the app from the Home Screen and turn on notifications (iOS only allows push for Home Screen apps). Then follow *Impostazioni* to create the *Segui prezzo* Shortcut for Safari's share sheet.
+- **Android:** Chrome → *Installa app*. **Prezzi** then appears in every app's share menu.
 - **Desktop:** paste links in the list, or drag the bookmarklet from Settings.
 
 ## Local development
@@ -71,7 +75,7 @@ npm test
 - **Run the cron once:** `npx netlify-cli functions:invoke check-prices --port 8888`
 - **Run the browser worker against the local API:**
   1. Install Chromium once: `npx playwright install chromium`
-  2. Run `PRICE_CHECK_URL=http://localhost:8888 APP_SECRET=… npx tsx worker/run.ts`
+  2. Run `PRICE_CHECK_URL=http://localhost:8888 WORKER_SECRET=… npx tsx worker/run.ts`
 
 ## How prices are found
 

@@ -18,4 +18,12 @@ describe('normalizeUrl', () => {
     expect(normalizeUrl('https://x.it/p?utm_source=ig&v1=123&gclid=a#reviews')).toBe('https://x.it/p?v1=123')
     expect(normalizeUrl('javascript:alert(1)')).toBeUndefined()
   })
+
+  it('refuses local and private addresses, since the API has no login', () => {
+    for (const url of ['http://localhost:8888/api', 'http://127.0.0.1/', 'http://169.254.169.254/latest', 'http://10.0.0.5/', 'http://192.168.1.1/', 'http://[::1]/', 'http://intranet/', 'https://user:pw@shop.it/p']) {
+      expect(normalizeUrl(url), url).toBeUndefined()
+    }
+    expect(normalizeUrl('https://8.8.8.8/p')).toBe('https://8.8.8.8/p')
+    expect(normalizeUrl('https://it.maxmara.com/p-1')).toBe('https://it.maxmara.com/p-1')
+  })
 })

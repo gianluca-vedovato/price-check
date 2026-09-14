@@ -17,9 +17,10 @@ export default defineConfig({
       devOptions: { enabled: true, type: 'module' },
       injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] },
       manifest: {
-        name: 'Price Check',
-        short_name: 'Prices',
-        description: 'Get an alert when a product gets cheaper.',
+        name: 'Prezzi',
+        short_name: 'Prezzi',
+        description: 'Ricevi un avviso quando un prodotto costa meno.',
+        lang: 'it',
         start_url: '/',
         scope: '/',
         display: 'standalone',

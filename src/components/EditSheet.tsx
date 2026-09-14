@@ -32,7 +32,7 @@ export function EditSheet({ product, onClose, onSave, onCheck, onDelete }: Props
   const canSave = rule.type === 'drop' || cap !== undefined
 
   return (
-    <Sheet open={Boolean(product)} onClose={onClose} label="Edit alert">
+    <Sheet open={Boolean(product)} onClose={onClose} label="Modifica avviso">
       {product && (
         <div className="flex flex-col gap-5">
           <div className="flex items-center gap-3">
@@ -43,15 +43,15 @@ export function EditSheet({ product, onClose, onSave, onCheck, onDelete }: Props
               <p className="truncate text-[15px] font-medium">{product.title}</p>
               <p className="tabular text-sm text-muted">
                 {product.pending
-                  ? 'Getting the price…'
-                  : `Now ${formatPrice(product.lastPrice, product.currency)} · lowest ${formatPrice(product.lowestPrice, product.currency)}`}
-                {product.route === 'browser' && ' · checked in a browser'}
+                  ? 'Sto recuperando il prezzo…'
+                  : `Ora ${formatPrice(product.lastPrice, product.currency)} · minimo ${formatPrice(product.lowestPrice, product.currency)}`}
+                {product.route === 'browser' && ' · controllato con un browser'}
               </p>
             </div>
           </div>
 
           {product.lastError && (
-            <p className="rounded-2xl bg-sunken px-4 py-3 text-sm text-warn">⚠ Last check failed: {product.lastError}</p>
+            <p className="rounded-2xl bg-sunken px-4 py-3 text-sm text-warn">⚠ Ultimo controllo non riuscito: {product.lastError}</p>
           )}
 
           <RuleControl
@@ -78,7 +78,7 @@ export function EditSheet({ product, onClose, onSave, onCheck, onDelete }: Props
             }}
             className="h-14 rounded-2xl bg-accent text-[17px] font-semibold text-on-accent transition active:scale-[0.98] disabled:opacity-40"
           >
-            {busy === 'save' ? 'Saving…' : 'Save'}
+            {busy === 'save' ? 'Salvataggio…' : 'Salva'}
           </button>
 
           <div className="grid grid-cols-3 gap-2 border-t border-line pt-4">
@@ -89,7 +89,7 @@ export function EditSheet({ product, onClose, onSave, onCheck, onDelete }: Props
               className="flex h-16 flex-col items-center justify-center gap-1 rounded-2xl text-[13px] font-medium active:bg-sunken"
             >
               <IconExternal />
-              Open
+              Apri
             </a>
             <button
               type="button"
@@ -105,7 +105,7 @@ export function EditSheet({ product, onClose, onSave, onCheck, onDelete }: Props
               className="flex h-16 flex-col items-center justify-center gap-1 rounded-2xl text-[13px] font-medium active:bg-sunken disabled:opacity-50"
             >
               <IconRefresh className={busy === 'check' ? 'animate-spin' : ''} />
-              {busy === 'check' ? 'Checking…' : 'Check now'}
+              {busy === 'check' ? 'Controllo…' : 'Controlla ora'}
             </button>
             <button
               type="button"
@@ -113,7 +113,7 @@ export function EditSheet({ product, onClose, onSave, onCheck, onDelete }: Props
               className="flex h-16 flex-col items-center justify-center gap-1 rounded-2xl text-[13px] font-medium text-up active:bg-sunken"
             >
               <IconTrash />
-              Delete
+              Elimina
             </button>
           </div>
         </div>

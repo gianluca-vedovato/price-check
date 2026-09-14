@@ -1,22 +1,17 @@
 import type { Config, Context } from '@netlify/functions'
 import type { PushSubscription } from 'web-push'
-import { error, json, requireKey } from '../lib/http'
+import { error, json } from '../lib/http'
 import { sendToAll } from '../lib/push'
 import { getSubscriptions, saveSubscriptions } from '../lib/store'
 
 export default async (req: Request, context: Context) => {
-  // The public key isn't secret: the app needs it before it can subscribe.
-  if (context.params.action === 'key' && req.method === 'GET') {
-    return json({ publicKey: process.env.VAPID_PUBLIC_KEY ?? null })
-  }
-
-  const denied = requireKey(req)
-  if (denied) return denied
-
   switch (`${req.method} ${context.params.action}`) {
+    // The public key isn't secret: the app needs it before it can subscribe.
+    case 'GET key':
+      return json({ publicKey: process.env.VAPID_PUBLIC_KEY ?? null })
     case 'POST subscribe': {
       const sub = (await req.json()) as PushSubscription
-      if (!sub?.endpoint || !sub.keys?.p256dh) return error('Invalid subscription')
+      if (!sub?.endpoint || !sub.keys?.p256dh) return error('Iscrizione alle notifiche non valida')
       const subs = (await getSubscriptions()).filter((s) => s.endpoint !== sub.endpoint)
       await saveSubscriptions([...subs, sub])
       return json({ ok: true, devices: subs.length + 1 })
@@ -28,8 +23,8 @@ export default async (req: Request, context: Context) => {
     }
     case 'POST test': {
       const sent = await sendToAll({
-        title: '🔔 Notifications work',
-        body: 'You’ll get an alert here when a price drops.',
+        title: '🔔 Le notifiche funzionano',
+        body: 'Riceverai un avviso qui quando un prezzo scende.',
         url: '/',
         tag: 'test',
       })

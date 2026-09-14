@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 20
     env:
       PRICE_CHECK_URL: ${{ secrets.PRICE_CHECK_URL }}
-      APP_SECRET: ${{ secrets.APP_SECRET }}
+      WORKER_SECRET: ${{ secrets.WORKER_SECRET }}
     # Stay quiet (no failed runs every 6h) until the repository secrets are set.
     if: ${{ vars.WORKER_ENABLED == 'true' }}
     steps:

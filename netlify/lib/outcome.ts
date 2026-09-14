@@ -3,7 +3,7 @@ import type { CheckOutcome, Product, Route } from '../../shared/types'
 import type { PushPayload } from './push'
 import { applyCheck, needsConfirmation, shouldNotify } from './rules'
 
-export const BROWSER_BLOCKED_MESSAGE = 'This shop blocks automatic checks, even from a real browser'
+export const BROWSER_BLOCKED_MESSAGE = 'Questo negozio blocca i controlli automatici, anche da un browser vero'
 
 export type Transition = {
   product: Product
@@ -30,8 +30,8 @@ export function applyOutcome(product: Product, outcome: CheckOutcome, via: Route
       return {
         product: { ...base, lastCheckedAt: now, lastError: BROWSER_BLOCKED_MESSAGE, unsupported: true },
         push: {
-          title: 'Can’t track this product',
-          body: `${product.title}: the shop blocks automatic checks.`,
+          title: 'Non posso seguire questo prodotto',
+          body: `${product.title}: il negozio blocca i controlli automatici.`,
           url: product.url,
           tag: product.id,
         },
@@ -43,7 +43,7 @@ export function applyOutcome(product: Product, outcome: CheckOutcome, via: Route
 
   const price = outcome.price
   if (!price) {
-    const message = product.pending ? 'Couldn’t find the price on the page' : 'Price not found on the page anymore'
+    const message = product.pending ? 'Non trovo il prezzo nella pagina' : 'Il prezzo non è più presente nella pagina'
     return { product: { ...base, lastCheckedAt: now, lastError: message } }
   }
 
@@ -83,13 +83,13 @@ function firstPrice(product: Product, outcome: Extract<CheckOutcome, { ok: true 
     lastError: undefined,
     pending: undefined,
   }
-  const target = rule.type === 'below' ? `alert below ${formatPrice(rule.cap, tracked.currency)}` : 'alert on any drop'
+  const target = rule.type === 'below' ? `avviso sotto ${formatPrice(rule.cap, tracked.currency)}` : 'avviso a ogni calo'
   return {
     product: tracked,
     push: {
       title: alreadyBelow
-        ? `Already below your target: ${formatPrice(price, tracked.currency)}`
-        : `Tracking at ${formatPrice(price, tracked.currency)}`,
+        ? `Già sotto il tuo obiettivo: ${formatPrice(price, tracked.currency)}`
+        : `Lo seguo a ${formatPrice(price, tracked.currency)}`,
       body: `${tracked.title} · ${target}`,
       image: tracked.image,
       url: tracked.url,
@@ -100,8 +100,8 @@ function firstPrice(product: Product, outcome: Extract<CheckOutcome, { ok: true 
 
 export function priceDropPayload(product: Product, previous: number, next: number): PushPayload {
   const pct = Math.round(((previous - next) / previous) * 100)
-  const was = pct > 0 ? `was ${formatPrice(previous, product.currency)}, −${pct}%` : ''
-  const target = product.rule.type === 'below' ? `under ${formatPrice(product.rule.cap, product.currency)}` : ''
+  const was = pct > 0 ? `era ${formatPrice(previous, product.currency)}, −${pct}%` : ''
+  const target = product.rule.type === 'below' ? `sotto ${formatPrice(product.rule.cap, product.currency)}` : ''
   const detail = [was, target].filter(Boolean).join(' · ')
   return {
     title: `↓ ${formatPrice(next, product.currency)}${detail ? `  (${detail})` : ''}`,

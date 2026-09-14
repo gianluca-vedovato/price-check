@@ -18,7 +18,7 @@ export function RuleControl({ value, onChange, currencySymbol, currentPrice }: R
 
   return (
     <fieldset>
-      <legend className="mb-2 text-[13px] font-medium text-muted">Alert me on</legend>
+      <legend className="mb-2 text-[13px] font-medium text-muted">Avvisami quando</legend>
       <div role="radiogroup" className="grid grid-cols-2 gap-1 rounded-2xl bg-sunken p-1">
         {(['drop', 'below'] as const).map((type) => (
           <button
@@ -31,7 +31,7 @@ export function RuleControl({ value, onChange, currencySymbol, currentPrice }: R
               value.type === type ? 'bg-surface text-ink shadow-sm' : 'text-muted active:bg-line'
             }`}
           >
-            {type === 'drop' ? 'Any drop' : 'Price below'}
+            {type === 'drop' ? 'Scende di prezzo' : 'Va sotto a'}
           </button>
         ))}
       </div>
@@ -39,7 +39,7 @@ export function RuleControl({ value, onChange, currencySymbol, currentPrice }: R
       {value.type === 'below' && (
         <div className="animate-rise mt-3 flex items-center gap-3">
           <label htmlFor={inputId} className="sr-only">
-            Target price
+            Prezzo obiettivo
           </label>
           <div className="flex h-14 flex-1 items-center rounded-2xl border border-line bg-surface px-4 focus-within:border-ink">
             <span className="mr-1 text-xl font-semibold text-faint">{currencySymbol}</span>
@@ -68,7 +68,7 @@ type IntervalProps = { value: IntervalHours; onChange: (value: IntervalHours) =>
 export function IntervalChips({ value, onChange }: IntervalProps) {
   return (
     <fieldset>
-      <legend className="mb-2 text-[13px] font-medium text-muted">Check every</legend>
+      <legend className="mb-2 text-[13px] font-medium text-muted">Controlla ogni</legend>
       <div role="radiogroup" className="flex gap-2">
         {INTERVALS.map((hours) => (
           <button
@@ -76,6 +76,7 @@ export function IntervalChips({ value, onChange }: IntervalProps) {
             type="button"
             role="radio"
             aria-checked={value === hours}
+            aria-label={hours === 1 ? 'Ogni ora' : `Ogni ${hours} ore`}
             onClick={() => onChange(hours)}
             className={`tabular h-11 flex-1 rounded-full border text-[15px] font-semibold transition ${
               value === hours ? 'border-ink bg-ink text-canvas' : 'border-line bg-surface text-ink active:bg-sunken'

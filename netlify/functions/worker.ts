@@ -1,13 +1,13 @@
 import type { Config, Context } from '@netlify/functions'
 import type { CheckOutcome, WorkerJob } from '../../shared/types'
 import { commitOutcome } from '../lib/checkProduct'
-import { error, json, requireKey } from '../lib/http'
+import { error, json, requireWorkerKey } from '../lib/http'
 import { needsBrowserCheck } from '../lib/rules'
 import { getProduct, listProducts } from '../lib/store'
 
 /** API for the GitHub Actions browser worker. */
 export default async (req: Request, context: Context) => {
-  const denied = requireKey(req)
+  const denied = requireWorkerKey(req)
   if (denied) return denied
 
   if (req.method === 'GET' && context.params.action === 'jobs') {
@@ -22,7 +22,7 @@ export default async (req: Request, context: Context) => {
     const { id, outcome } = (await req.json()) as { id: string; outcome: CheckOutcome }
     // Re-read so edits made while the browser was loading aren't overwritten.
     const product = await getProduct(id)
-    if (!product) return error('Product not found', 404)
+    if (!product) return error('Prodotto non trovato', 404)
     const { product: updated, push } = await commitOutcome(product, outcome, 'browser')
     return json({ id, price: updated.lastPrice, error: updated.lastError, notified: Boolean(push) })
   }

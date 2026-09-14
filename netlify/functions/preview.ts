@@ -3,15 +3,12 @@ import { titleFromUrl } from '../../shared/format'
 import type { Preview } from '../../shared/types'
 import { BLOCKED_MESSAGE, FetchError, normalizeUrl } from '../lib/fetchPage'
 import { browserWorkerEnabled } from '../lib/github'
-import { error, json, requireKey } from '../lib/http'
+import { error, json } from '../lib/http'
 import { scrape } from '../lib/scrape'
 
 export default async (req: Request) => {
-  const denied = requireKey(req)
-  if (denied) return denied
-
   const url = normalizeUrl(new URL(req.url).searchParams.get('url') ?? '')
-  if (!url) return error('That doesn’t look like a link')
+  if (!url) return error('Questo non sembra un link')
 
   try {
     const { data } = await scrape(url)
@@ -30,7 +27,7 @@ export default async (req: Request) => {
     const preview: Preview = {
       url,
       found: false,
-      error: e instanceof FetchError ? e.message : 'Couldn’t read this page',
+      error: e instanceof FetchError ? e.message : 'Non riesco a leggere questa pagina',
       blocked,
       browserCheck: blocked && browserWorkerEnabled(),
       title: blocked ? titleFromUrl(url) : undefined,
