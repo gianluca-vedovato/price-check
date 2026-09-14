@@ -14,7 +14,7 @@ export default async (req: Request, context: Context) => {
     const now = Date.now()
     const jobs: WorkerJob[] = (await listProducts())
       .filter((p) => needsBrowserCheck(p, now))
-      .map((p) => ({ id: p.id, url: p.url, locator: p.locator }))
+      .map((p) => ({ id: p.id, url: p.url, locator: p.locator, engine: p.engine }))
     return json(jobs)
   }
 

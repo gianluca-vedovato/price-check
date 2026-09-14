@@ -1,5 +1,5 @@
 import { formatPrice } from '../../shared/format'
-import type { CheckOutcome, Product, Route } from '../../shared/types'
+import { WORKER_ENGINES, type CheckOutcome, type Product, type Route } from '../../shared/types'
 import type { PushPayload } from './push'
 import { applyCheck, needsConfirmation, shouldNotify } from './rules'
 
@@ -18,7 +18,9 @@ export type Transition = {
  * and the GitHub browser worker (`via: 'browser'`).
  */
 export function applyOutcome(product: Product, outcome: CheckOutcome, via: Route, now: number, browserAvailable: boolean): Transition {
-  const base: Product = { ...product, checkRequested: undefined }
+  // Any check that runs is a fresh attempt, including a retry of a product the worker gave up on.
+  const base: Product = { ...product, checkRequested: undefined, unsupported: undefined, unsupportedEngines: undefined }
+  if (outcome.ok && outcome.engine) base.engine = outcome.engine
 
   if (!outcome.ok) {
     if (via === 'fetch' && outcome.blocked && browserAvailable) {
@@ -26,9 +28,10 @@ export function applyOutcome(product: Product, outcome: CheckOutcome, via: Route
       return { product: { ...base, route: 'browser', lastError: undefined }, escalated: true }
     }
     // Blocks can be temporary: give up on a new product only when a second run is blocked too.
-    if (via === 'browser' && outcome.blocked && product.pending && product.lastError === BROWSER_BLOCKED_MESSAGE) {
+    // A retry after the worker's browsers changed counts as a first run again.
+    if (via === 'browser' && outcome.blocked && product.pending && !product.unsupported && product.lastError === BROWSER_BLOCKED_MESSAGE) {
       return {
-        product: { ...base, lastCheckedAt: now, lastError: BROWSER_BLOCKED_MESSAGE, unsupported: true },
+        product: { ...base, lastCheckedAt: now, lastError: BROWSER_BLOCKED_MESSAGE, unsupported: true, unsupportedEngines: WORKER_ENGINES },
         push: {
           title: 'Non posso seguire questo prodotto',
           body: `${product.title}: il negozio blocca i controlli automatici.`,

@@ -3,9 +3,16 @@
  * Runs in GitHub Actions (see .github/workflows/price-worker.yml) or locally:
  *
  *   PRICE_CHECK_URL=http://localhost:8888 WORKER_SECRET=… npx tsx worker/run.ts
+ *
+ * With product URLs as arguments it only prints what it finds, without the API:
+ *
+ *   npx tsx worker/run.ts https://www2.hm.com/it_it/productpage.1352054002.html
  */
-import { chromium, type Browser } from 'playwright'
-import type { CheckOutcome, WorkerJob } from '../shared/types'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import type { Page } from 'playwright'
+import { BROWSER_ENGINES, type BrowserEngine, type CheckOutcome, type WorkerJob } from '../shared/types'
 import { extract } from '../netlify/lib/extract'
 import { BLOCKED_MESSAGE, looksBlocked, shopErrorMessage } from '../netlify/lib/fetchPage'
 
@@ -13,9 +20,10 @@ const API = (process.env.PRICE_CHECK_URL ?? '').replace(/\/$/, '')
 const KEY = process.env.WORKER_SECRET ?? ''
 const CONCURRENCY = 2
 const MAX_ROUNDS = 5
+const dryRunUrls = process.argv.slice(2)
 
-if (!API || !KEY) {
-  console.error('Set PRICE_CHECK_URL and WORKER_SECRET')
+if (!dryRunUrls.length && (!API || !KEY)) {
+  console.error('Set PRICE_CHECK_URL and WORKER_SECRET, or pass product URLs to try them without the API')
   process.exit(1)
 }
 
@@ -28,64 +36,110 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>
 }
 
-async function check(browser: Browser, job: WorkerJob): Promise<CheckOutcome> {
-  // A fresh context per product, so one shop's cookies never affect another.
-  const context = await browser.newContext({
-    // Headless Chromium announces itself as "HeadlessChrome", which bot protection blocks instantly.
-    userAgent: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${browser.version().split('.')[0]}.0.0.0 Safari/537.36`,
-    locale: 'it-IT',
-    timezoneId: 'Europe/Rome',
-    viewport: { width: 1366, height: 900 },
-  })
-  const page = await context.newPage()
-  try {
-    const res = await page.goto(job.url, { waitUntil: 'domcontentloaded', timeout: 45_000 })
-    await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => undefined)
-    const html = await page.content()
-    if (res?.status() === 403 || res?.status() === 429 || looksBlocked(html)) {
-      return { ok: false, blocked: true, message: BLOCKED_MESSAGE }
+/**
+ * A fresh browser and profile per product, so one shop's cookies never affect another.
+ * Both run headed (on a virtual display in CI) and keep their own user agent, as their docs advise.
+ * They bundle their own Playwright copies, hence the Page casts.
+ */
+async function openPage(engine: BrowserEngine): Promise<{ page: Page; close: () => Promise<void> }> {
+  if (engine === 'patchright') {
+    const { chromium } = await import('patchright')
+    const profile = mkdtempSync(join(tmpdir(), 'patchright-'))
+    const context = await chromium.launchPersistentContext(profile, { channel: 'chrome', headless: false, viewport: null })
+    return {
+      page: (await context.newPage()) as unknown as Page,
+      close: async () => {
+        await context.close()
+        rmSync(profile, { recursive: true, force: true })
+      },
     }
-    if (res && res.status() >= 400) return { ok: false, blocked: false, message: shopErrorMessage(res.status()) }
-    const data = extract(html, page.url(), job.locator)
-    return { ok: true, price: data.price, currency: data.currency, title: data.title, image: data.image, locator: data.locator }
+  }
+  const { Camoufox } = await import('camoufox-js')
+  const browser = await Camoufox({ headless: false })
+  return { page: (await browser.newPage()) as unknown as Page, close: () => browser.close() }
+}
+
+async function checkWith(engine: BrowserEngine, job: WorkerJob): Promise<CheckOutcome> {
+  let session: Awaited<ReturnType<typeof openPage>> | undefined
+  try {
+    session = await openPage(engine)
+    const { page } = session
+    let outcome: CheckOutcome = { ok: false, blocked: true, message: BLOCKED_MESSAGE }
+    // Bot checks sometimes pass only on a second load, once their sensor script has run.
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const res = attempt === 1
+        ? await page.goto(job.url, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+        : await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 })
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => undefined)
+      await page.waitForTimeout(4000)
+      const html = await page.content()
+      const status = res?.status() ?? 200
+      const data = looksBlocked(html) ? undefined : extract(html, page.url(), job.locator)
+      // The first response can be a bot check that reloads into the real page, so a readable price wins over its status.
+      if (data?.price) return { ok: true, price: data.price, currency: data.currency, title: data.title, image: data.image, locator: data.locator, engine }
+      if (!data || status === 403 || status === 429) outcome = { ok: false, blocked: true, message: BLOCKED_MESSAGE }
+      else if (status >= 400) outcome = { ok: false, blocked: false, message: shopErrorMessage(status) }
+      else outcome = { ok: true, currency: data.currency, title: data.title, image: data.image, engine }
+    }
+    return outcome
   } catch (e) {
     return { ok: false, blocked: false, message: (e as Error).message.split('\n')[0] }
   } finally {
-    await context.close()
+    await session?.close().catch(() => undefined)
   }
 }
 
-// Full Chromium in the new headless mode: the lighter headless shell gets blocked everywhere.
-const browser = await chromium.launch({ headless: true, channel: 'chromium' })
+/** Tries the browser that last worked for this product first, then the others. */
+async function check(job: WorkerJob): Promise<CheckOutcome> {
+  const order = job.engine ? [job.engine, ...BROWSER_ENGINES.filter((e) => e !== job.engine)] : [...BROWSER_ENGINES]
+  let best: CheckOutcome | undefined
+  for (const engine of order) {
+    const outcome = await checkWith(engine, job)
+    if (outcome.ok && outcome.price) return outcome
+    // Without a price anywhere, report the most telling result: anything beats a block.
+    if (!best || (!best.ok && best.blocked)) best = outcome
+  }
+  return best!
+}
+
+function summary(outcome: CheckOutcome): string {
+  if (!outcome.ok) return outcome.blocked ? 'blocked' : `error: ${outcome.message}`
+  return `${outcome.price ? `${outcome.currency ?? ''} ${outcome.price}` : 'no price'} via ${outcome.engine}`
+}
+
+if (dryRunUrls.length) {
+  for (const url of dryRunUrls) {
+    const started = Date.now()
+    const outcome = await check({ id: 'dry-run', url })
+    console.log(`${summary(outcome)} · ${Math.round((Date.now() - started) / 1000)}s · ${url}`)
+  }
+  process.exit(0)
+}
+
 const done = new Set<string>()
 let checked = 0
 
-try {
-  // Products added while a round is running get picked up by the next one.
-  for (let round = 1; round <= MAX_ROUNDS; round++) {
-    const jobs = (await api<WorkerJob[]>('/api/worker/jobs')).filter((j) => !done.has(j.id))
-    if (jobs.length === 0) break
-    console.log(`round ${round}: ${jobs.length} product(s)`)
+// Products added while a round is running get picked up by the next one.
+for (let round = 1; round <= MAX_ROUNDS; round++) {
+  const jobs = (await api<WorkerJob[]>('/api/worker/jobs')).filter((j) => !done.has(j.id))
+  if (jobs.length === 0) break
+  console.log(`round ${round}: ${jobs.length} product(s)`)
 
-    await Promise.all(
-      Array.from({ length: CONCURRENCY }, async () => {
-        for (let job = jobs.shift(); job; job = jobs.shift()) {
-          done.add(job.id)
-          const started = Date.now()
-          const outcome = await check(browser, job)
-          const result = await api<{ price: number; error?: string; notified: boolean }>('/api/worker/result', {
-            method: 'POST',
-            body: JSON.stringify({ id: job.id, outcome }),
-          }).catch((e: Error) => ({ price: 0, error: e.message, notified: false }))
-          checked++
-          const status = outcome.ok ? (outcome.price ? `€${outcome.price}` : 'no price') : outcome.blocked ? 'blocked' : 'error'
-          console.log(`  ${status.padEnd(10)} ${String(Date.now() - started).padStart(6)}ms ${result.notified ? 'notified ' : ''}${result.error ?? ''} ${job.url}`)
-        }
-      }),
-    )
-  }
-} finally {
-  await browser.close()
+  await Promise.all(
+    Array.from({ length: CONCURRENCY }, async () => {
+      for (let job = jobs.shift(); job; job = jobs.shift()) {
+        done.add(job.id)
+        const started = Date.now()
+        const outcome = await check(job)
+        const result = await api<{ price: number; error?: string; notified: boolean }>('/api/worker/result', {
+          method: 'POST',
+          body: JSON.stringify({ id: job.id, outcome }),
+        }).catch((e: Error) => ({ price: 0, error: e.message, notified: false }))
+        checked++
+        console.log(`  ${summary(outcome).padEnd(24)} ${String(Date.now() - started).padStart(6)}ms ${result.notified ? 'notified ' : ''}${result.error ?? ''} ${job.url}`)
+      }
+    }),
+  )
 }
 
 console.log(`done: ${checked} checked`)

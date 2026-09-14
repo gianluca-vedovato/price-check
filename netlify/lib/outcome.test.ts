@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Product } from '../../shared/types'
+import { WORKER_ENGINES, type Product } from '../../shared/types'
 import { applyOutcome, BROWSER_BLOCKED_MESSAGE } from './outcome'
 import { needsBrowserCheck } from './rules'
 
@@ -89,9 +89,30 @@ describe('applyOutcome: browser worker', () => {
     expect(needsBrowserCheck(first.product, NOW)).toBe(true)
 
     const second = applyOutcome(first.product, blocked, 'browser', NOW + HOUR, true)
-    expect(second.product).toMatchObject({ unsupported: true, lastError: BROWSER_BLOCKED_MESSAGE })
+    expect(second.product).toMatchObject({ unsupported: true, unsupportedEngines: WORKER_ENGINES, lastError: BROWSER_BLOCKED_MESSAGE })
     expect(second.push?.title).toBe('Non posso seguire questo prodotto')
     expect(needsBrowserCheck(second.product, NOW + HOUR)).toBe(false)
+  })
+
+  it('gives a product another full chance when the worker browsers have changed since it gave up', () => {
+    // Saved by the old Chromium worker, which didn't record its browsers.
+    const givenUp = pending({ lastError: BROWSER_BLOCKED_MESSAGE, lastCheckedAt: NOW - HOUR, unsupported: true })
+    expect(needsBrowserCheck(givenUp, NOW)).toBe(true)
+
+    const retried = applyOutcome(givenUp, blocked, 'browser', NOW, true)
+    expect(retried.product.unsupported).toBeUndefined()
+    expect(retried.push).toBeUndefined()
+
+    const found = applyOutcome(givenUp, { ok: true, price: 59.99, engine: 'camoufox' }, 'browser', NOW, true)
+    expect(found.product).toMatchObject({ lastPrice: 59.99, engine: 'camoufox' })
+    expect(found.product.unsupported).toBeUndefined()
+    expect(found.product.pending).toBeUndefined()
+  })
+
+  it('remembers the browser that loaded the page, and keeps it when a later check is blocked', () => {
+    const { product: next } = applyOutcome(product({ route: 'browser' }), { ok: true, price: 45, engine: 'patchright' }, 'browser', NOW, true)
+    expect(next.engine).toBe('patchright')
+    expect(applyOutcome(next, blocked, 'browser', NOW + HOUR, true).product.engine).toBe('patchright')
   })
 
   it('keeps retrying an already tracked product that is blocked once', () => {

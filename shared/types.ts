@@ -35,11 +35,23 @@ export type Product = {
   pending?: boolean
   /** "Check now" was requested for a browser-route product. */
   checkRequested?: boolean
+  /** The worker browser that last loaded the page, tried first next time. */
+  engine?: BrowserEngine
   /** The shop blocked even the browser before we ever got a price; no more automatic attempts. */
   unsupported?: boolean
+  /** The worker browsers (`WORKER_ENGINES`) that were blocked; a worker with different browsers tries again. */
+  unsupportedEngines?: string
 }
 
 export type Route = 'fetch' | 'browser'
+
+/**
+ * Stealth browsers the GitHub worker tries, in this order: each gets past shops the other can't
+ * (tested Sept 2026: only Patchright loads YOOX, only Camoufox loads H&M).
+ */
+export const BROWSER_ENGINES = ['patchright', 'camoufox'] as const
+export type BrowserEngine = (typeof BROWSER_ENGINES)[number]
+export const WORKER_ENGINES = BROWSER_ENGINES.join('+')
 
 export type Preview = {
   url: string
@@ -67,10 +79,10 @@ export type CreateProductInput = {
 
 /** What a check produced, from either the Netlify fetch or the browser worker. */
 export type CheckOutcome =
-  | { ok: true; price?: number; currency?: string; title?: string; image?: string; locator?: string }
+  | { ok: true; price?: number; currency?: string; title?: string; image?: string; locator?: string; engine?: BrowserEngine }
   | { ok: false; blocked: boolean; message: string }
 
-export type WorkerJob = { id: string; url: string; locator?: string }
+export type WorkerJob = { id: string; url: string; locator?: string; engine?: BrowserEngine }
 
 export type UpdateProductInput = {
   rule?: Rule

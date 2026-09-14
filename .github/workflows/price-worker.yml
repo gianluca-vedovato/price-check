@@ -1,6 +1,6 @@
 name: Price worker
 
-# Checks products from shops that block plain server requests, using a real browser.
+# Checks products from shops that block plain server requests, using stealth browsers.
 # Netlify starts this workflow when such a product is added or due; the schedule is only a safety net.
 on:
   workflow_dispatch:
@@ -15,36 +15,40 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       PRICE_CHECK_URL: ${{ secrets.PRICE_CHECK_URL }}
       WORKER_SECRET: ${{ secrets.WORKER_SECRET }}
     # Stay quiet (no failed runs every 6h) until the repository secrets are set.
     if: ${{ vars.WORKER_ENABLED == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
 
       - run: npm ci
 
-      - name: Cache Chromium
-        id: browsers
-        uses: actions/cache@v4
+      # Patchright drives the Google Chrome already installed on the runner; Camoufox is downloaded.
+      - name: Cache Camoufox
+        id: camoufox
+        uses: actions/cache@v6
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          path: ~/.cache/camoufox
+          key: camoufox-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
-      - name: Install Chromium
-        if: steps.browsers.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+      - name: Download Camoufox
+        if: steps.camoufox.outputs.cache-hit != 'true'
+        run: npx camoufox-js fetch
+        env:
+          # It looks up releases on the GitHub API, which rate-limits anonymous calls from shared runner IPs.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Chromium system libraries
-        if: steps.browsers.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+      # Both browsers run headed (harder to detect), so they also need a virtual display.
+      - name: Install browser system libraries and virtual display
+        run: npx playwright install-deps chromium firefox
 
       - name: Check prices
-        run: npx tsx worker/run.ts
+        run: xvfb-run --auto-servernum npx tsx worker/run.ts

@@ -1,4 +1,4 @@
-import type { Product } from '../../shared/types'
+import { WORKER_ENGINES, type Product } from '../../shared/types'
 
 /** Decides whether a freshly checked price should trigger an alert. */
 export function shouldNotify(product: Product, newPrice: number): boolean {
@@ -52,7 +52,9 @@ export function isDue(product: Product, now: number, lookaheadMs = 0): boolean {
 
 /** Browser-route products the worker should check now. */
 export function needsBrowserCheck(product: Product, now: number): boolean {
-  if (product.route !== 'browser' || product.unsupported) return false
+  if (product.route !== 'browser') return false
+  // A product the worker gave up on gets another chance once the worker's browsers change.
+  if (product.unsupported && product.unsupportedEngines === WORKER_ENGINES) return false
   const lookahead = Math.min(3 * 3600_000, (product.intervalHours * 3600_000) / 2)
   return Boolean(product.pending || product.checkRequested) || isDue(product, now, lookahead)
 }

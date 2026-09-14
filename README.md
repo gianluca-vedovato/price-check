@@ -4,7 +4,7 @@ Personal price-drop alerts. Share a product link → tap **Track** → get a pus
 
 - **App:** React PWA (Vite + Tailwind), installable, with a share target on Android and an iOS Shortcut
 - **API + cron:** Netlify Functions, with an hourly scheduled function that checks products when they're due
-- **Browser worker:** GitHub Actions + Playwright, only for shops that block server requests (e.g. Zara)
+- **Browser worker:** GitHub Actions + stealth browsers (Patchright and Camoufox), only for shops that block server requests (e.g. Zara, H&M)
 - **Storage:** Netlify Blobs (no database)
 - **Alerts:** Web Push (VAPID)
 - **Price detection:** no LLM and no per-site code. See [How prices are found](#how-prices-are-found)
@@ -18,14 +18,14 @@ product ──▶ │ plain fetch → extract → rules → push           │
             └──────────────────────────────────┼─────────────┘
                                                ▼ workflow_dispatch
             ┌──────── GitHub Actions: price-worker.yml ─────┐
-            │ GET /api/worker/jobs → Chromium → extract      │
+            │ GET /api/worker/jobs → browser → extract       │
             │ POST /api/worker/result → same rules → push    │
             └────────────────────────────────────────────────┘
 ```
 
 - **Adding from a blocked shop:** the product is saved as *Getting the price…* and the worker starts. You get a notification with the price in about 2 minutes.
-- **Two blocked runs in a row:** if the browser is blocked twice for a new product, it's marked as not trackable and you get one notification about it.
-- **H&M** blocks cloud IPs even for real browsers, so it's currently not trackable from GitHub. The same worker works from a home connection: `npx tsx worker/run.ts`.
+- **Two browsers:** the worker tries Patchright (Google Chrome) first and Camoufox (Firefox) when blocked, then remembers which one worked for each product. Neither gets past every shop alone: only Patchright loads YOOX, only Camoufox loads H&M.
+- **Two blocked runs in a row:** if both browsers are blocked twice for a new product, it's marked as not trackable and you get one notification about it. When the worker's browsers change, those products get another try.
 
 ## Deploy (free)
 
@@ -53,7 +53,7 @@ In the repo → Settings → Secrets and variables → Actions:
 
 Without that variable the workflow skips itself, so there are no failing runs before setup.
 
-Cost: each product takes about 12–15 s in the browser. The worker also takes products due within the next 3 hours, so runs cluster together, and a handful of Zara products fits easily in the 2,000 free Actions minutes/month.
+Cost: each product takes about 10–15 s, or twice that when the first browser is blocked. Actions minutes are free for public repositories. A private repository gets 2,000 free minutes a month, which still fits a handful of products because the worker also takes products due within the next 3 hours, so runs cluster together.
 
 ## Phone setup
 
@@ -74,8 +74,9 @@ npm test
 
 - **Run the cron once:** `npx netlify-cli functions:invoke check-prices --port 8888`
 - **Run the browser worker against the local API:**
-  1. Install Chromium once: `npx playwright install chromium`
+  1. Download Camoufox once: `npx camoufox-js fetch` (Patchright uses your installed Google Chrome)
   2. Run `PRICE_CHECK_URL=http://localhost:8888 WORKER_SECRET=… npx tsx worker/run.ts`
+- **Try the worker on some product pages without the API:** `npx tsx worker/run.ts <product URL> …`
 
 ## How prices are found
 
@@ -99,6 +100,4 @@ Safety nets:
 | Shop | Checked by |
 |---|---|
 | Max Mara, Intrend, Amazon, IKEA, Zalando, Nike, ASOS, Mango, Shopify stores | Netlify fetch |
-| Zara, Pull&Bear | GitHub browser worker |
-| H&M | Home connection only (blocks cloud IPs) |
-| Mytheresa, YOOX | Not trackable (block even real browsers) |
+| Zara, Pull&Bear, H&M, YOOX, Mytheresa | GitHub browser worker |
