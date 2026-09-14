@@ -36,7 +36,7 @@ product ──▶ │ plain fetch → extract → rules → push           │
 3. In Netlify → Site configuration → Environment variables, add:
    - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`: from step 2
    - `VAPID_SUBJECT`: `mailto:you@example.com`
-   - `GITHUB_REPO`: `gianluca-vedovato-24/price-check`
+   - `GITHUB_REPO`: `gianluca-vedovato/price-check`
    - `GITHUB_TOKEN`: a [fine-grained token](https://github.com/settings/personal-access-tokens/new) with access to this repository only and the permission **Actions: Read and write**
    - `WORKER_SECRET`: any long random string (shared only between Netlify and the GitHub worker)
 4. Redeploy and open the site.
