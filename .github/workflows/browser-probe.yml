@@ -14,11 +14,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Install Playwright with full Chromium
+      - name: Install Playwright with Chromium and Google Chrome
         run: |
           npm install --no-save playwright tsx
-          npx playwright install --with-deps chromium
-      - name: Probe (new headless + headless shell)
-        run: npx tsx worker/probe.ts new shell
-      - name: Probe (headed, virtual display)
-        run: xvfb-run --auto-servernum npx tsx worker/probe.ts headed
+          npx playwright install --with-deps chromium chrome
+      - name: Probe (Google Chrome, stealth, homepage warm-up)
+        run: xvfb-run --auto-servernum npx tsx worker/probe.ts stealth

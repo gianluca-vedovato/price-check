@@ -21,6 +21,10 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 async function launch(mode: string): Promise<Browser> {
   if (mode === 'shell') return chromium.launch({ headless: true })
   if (mode === 'headed') return chromium.launch({ headless: false })
+  // Real Google Chrome, visible, without the "controlled by automation" markers.
+  if (mode === 'stealth') {
+    return chromium.launch({ headless: false, channel: 'chrome', args: ['--disable-blink-features=AutomationControlled'] })
+  }
   return chromium.launch({ headless: true, channel: 'chromium' })
 }
 
@@ -44,10 +48,23 @@ for (const mode of modes) {
   console.log('')
   const browser = await launch(mode)
   for (const [name, url] of SHOPS) {
-    const context = await browser.newContext({ userAgent: UA, locale: 'it-IT', viewport: { width: 1366, height: 900 } })
+    const stealth = mode === 'stealth'
+    const context = await browser.newContext({
+      // Stealth keeps Chrome's own user agent so it matches the browser's other signals.
+      ...(stealth ? {} : { userAgent: UA }),
+      locale: 'it-IT',
+      timezoneId: 'Europe/Rome',
+      viewport: { width: 1366, height: 900 },
+    })
     const page = await context.newPage()
     const started = Date.now()
     try {
+      if (stealth) {
+        await page.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => undefined }))
+        // Visit the homepage first so bot protection can run its sensor script and set cookies.
+        await page.goto(new URL(url).origin, { waitUntil: 'domcontentloaded', timeout: 30_000 }).catch(() => undefined)
+        await page.waitForTimeout(4000)
+      }
       const res = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 })
       await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => undefined)
       const html = await page.content()
