@@ -1,8 +1,8 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  --font-display: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
 
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
@@ -14,43 +14,51 @@
   --color-drop: var(--drop);
   --color-drop-soft: var(--drop-soft);
   --color-up: var(--up);
+  --color-up-soft: var(--up-soft);
   --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
   --color-accent: var(--accent);
+  --color-accent2: var(--accent2);
   --color-on-accent: var(--on-accent);
 }
 
 :root {
-  --canvas: #f6f5f1;
-  --surface: #ffffff;
-  --sunken: #eceae3;
-  --ink: #17160f;
-  --muted: #6b6960;
-  --faint: #a19e93;
-  --line: #e4e1d8;
-  --drop: #13804a;
-  --drop-soft: #dcf2e4;
-  --up: #b4452f;
-  --warn: #9a6a00;
-  --accent: #17160f;
+  --canvas: oklch(96.5% 0.003 195);
+  --surface: oklch(100% 0 0);
+  --sunken: oklch(94% 0.005 195);
+  --ink: oklch(19% 0.012 195);
+  --muted: oklch(48% 0.012 195);
+  --faint: oklch(68% 0.01 195);
+  --line: oklch(89% 0.006 195);
+  --drop: oklch(50% 0.15 155);
+  --drop-soft: oklch(94% 0.05 155);
+  --up: oklch(52% 0.16 32);
+  --up-soft: oklch(94% 0.03 32);
+  --warn: oklch(58% 0.14 80);
+  --warn-soft: oklch(94% 0.04 80);
+  --accent: #1f8fa3;
+  --accent2: #3f78d8;
   --on-accent: #ffffff;
+  --shadow-1: 0 1px 2px oklch(20% 0 0 / 0.05), 0 12px 28px oklch(20% 0 0 / 0.09);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #121210;
-    --surface: #1c1c19;
-    --sunken: #262622;
-    --ink: #f3f1ea;
-    --muted: #a3a097;
-    --faint: #6e6c64;
-    --line: #2e2d29;
-    --drop: #4fd08a;
-    --drop-soft: #17392a;
-    --up: #f08a73;
-    --warn: #e5b547;
-    --accent: #f3f1ea;
-    --on-accent: #121210;
+    --canvas: oklch(17% 0.01 195);
+    --surface: oklch(21% 0.01 195);
+    --sunken: oklch(25% 0.012 195);
+    --ink: oklch(95% 0.004 195);
+    --muted: oklch(68% 0.01 195);
+    --faint: oklch(45% 0.01 195);
+    --line: oklch(30% 0.012 195);
+    --drop: oklch(74% 0.16 155);
+    --drop-soft: oklch(27% 0.06 155);
+    --up: oklch(74% 0.15 32);
+    --up-soft: oklch(27% 0.05 32);
+    --warn: oklch(80% 0.13 80);
+    --warn-soft: oklch(27% 0.05 80);
+    --shadow-1: 0 1px 0 oklch(100% 0 0 / 0.04), 0 0 0 1px oklch(100% 0 0 / 0.05);
     color-scheme: dark;
   }
 }
@@ -158,6 +166,10 @@ body {
   background: linear-gradient(90deg, var(--sunken) 25%, var(--line) 50%, var(--sunken) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.3s linear infinite;
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-1);
 }
 
 @media (prefers-reduced-motion: reduce) {

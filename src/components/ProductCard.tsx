@@ -19,15 +19,13 @@ export function ProductCard({ product, onMore, style }: { product: Product; onMo
         href={product.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex gap-3.5 rounded-3xl bg-surface p-3 pr-12 transition active:scale-[0.985]"
+        className="shadow-card flex gap-3.5 rounded-3xl bg-surface p-3.5 pr-13 transition active:scale-[0.985]"
       >
-        <div className="size-[76px] shrink-0 overflow-hidden rounded-2xl bg-white ring-1 ring-line">
+        <div className="size-[76px] shrink-0 overflow-hidden rounded-[18px] bg-white ring-1 ring-line">
           {product.image ? (
             <img src={product.image} alt="" loading="lazy" referrerPolicy="no-referrer" className="size-full object-contain" />
           ) : (
-            <div className="grid size-full place-items-center font-display text-2xl font-bold text-faint">
-              {host.charAt(0).toUpperCase()}
-            </div>
+            <div className="grid size-full place-items-center font-serif text-3xl text-faint">{host.charAt(0).toUpperCase()}</div>
           )}
         </div>
 
@@ -57,14 +55,14 @@ export function ProductCard({ product, onMore, style }: { product: Product; onMo
               )}
             </div>
           ) : (
-          <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+          <div className="mt-auto flex items-end justify-between gap-2 pt-2.5">
             <div className="flex min-w-0 flex-col">
               <div className="flex items-baseline gap-2">
-                <span className="tabular font-display text-xl leading-none font-bold">
+                <span className={`tabular font-serif leading-none ${pct > 0 ? 'text-[23px] text-drop' : 'text-[22px]'}`}>
                   {formatPrice(product.lastPrice, product.currency)}
                 </span>
                 {pct > 0 && (
-                  <span className="tabular rounded-full bg-drop-soft px-1.5 py-0.5 text-xs font-semibold text-drop">
+                  <span className="tabular rounded-full bg-drop-soft px-2.5 py-0.5 text-xs font-bold text-drop">
                     ↓ {pct}%
                   </span>
                 )}
@@ -85,7 +83,7 @@ export function ProductCard({ product, onMore, style }: { product: Product; onMo
                 )}
               </span>
             </div>
-            <Sparkline points={product.history} className="mb-0.5 shrink-0" />
+            <Sparkline points={product.history} tone={pct > 0 ? 'drop' : pct < 0 ? 'up' : 'faint'} className="mb-0.5 shrink-0" />
           </div>
           )}
         </div>

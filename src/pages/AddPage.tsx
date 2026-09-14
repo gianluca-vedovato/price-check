@@ -110,15 +110,15 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
         {state.status === 'loading' && <PreviewSkeleton host={hostOf(url)} />}
 
         {state.status === 'failed' && (
-          <div className="animate-rise rounded-3xl bg-surface p-5">
+          <div className="shadow-card animate-rise rounded-3xl bg-surface p-5">
             <p className="text-sm text-muted">{hostOf(url)}</p>
-            <h2 className="mt-1 font-display text-xl font-bold">Non riesco a leggere questa pagina</h2>
+            <h2 className="mt-1 font-serif text-2xl">Non riesco a leggere questa pagina</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-muted">{state.message}</p>
             <div className="mt-4 flex gap-2">
               <button
                 type="button"
                 onClick={() => setAttempt((a) => a + 1)}
-                className="h-12 flex-1 rounded-2xl bg-accent font-semibold text-on-accent active:scale-[0.98]"
+                className="h-12 flex-1 rounded-2xl bg-gradient-to-br from-accent to-accent2 font-semibold text-on-accent active:scale-[0.98]"
               >
                 Riprova
               </button>
@@ -136,9 +136,9 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
 
         {preview && (
           <>
-            <article className="animate-rise overflow-hidden rounded-3xl bg-surface">
+            <article className="shadow-card animate-rise overflow-hidden rounded-3xl bg-surface">
               {preview.image && (
-                <div className="flex h-56 items-center justify-center bg-white p-4">
+                <div className="flex h-[180px] items-center justify-center bg-white p-4">
                   <img src={preview.image} alt="" referrerPolicy="no-referrer" className="max-h-full max-w-full object-contain" />
                 </div>
               )}
@@ -159,7 +159,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
                   </div>
                 ) : !askingPrice && preview.price ? (
                   <div className="mt-2 flex items-end justify-between gap-3">
-                    <p className="tabular font-display text-[34px] leading-none font-bold tracking-tight">
+                    <p className="tabular font-serif text-[36px] leading-none tracking-tight">
                       {formatPrice(preview.price, currency)}
                     </p>
                     <button
@@ -200,7 +200,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
                         placeholder="0,00"
                         value={manualPrice}
                         onChange={(e) => setManualPrice(e.target.value.replace(/[^\d.,]/g, ''))}
-                        className="tabular w-full bg-transparent font-display text-2xl font-semibold outline-none placeholder:text-faint"
+                        className="tabular w-full bg-transparent font-serif text-2xl outline-none placeholder:text-faint"
                       />
                     </div>
                   </div>
@@ -226,7 +226,7 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
               type="button"
               disabled={!canTrack}
               onClick={track}
-              className="h-14 w-full rounded-2xl bg-accent text-[17px] font-semibold text-on-accent shadow-lg transition active:scale-[0.98] disabled:opacity-35 disabled:shadow-none"
+              className="h-14 w-full rounded-2xl bg-gradient-to-br from-accent to-accent2 text-[17px] font-semibold text-on-accent shadow-lg transition active:scale-[0.98] disabled:opacity-35 disabled:shadow-none"
             >
               {saving ? 'Salvataggio…' : 'Segui'}
             </button>
@@ -239,8 +239,8 @@ function AddForm({ url, shareTitle }: { url: string; shareTitle?: string }) {
 
 function PreviewSkeleton({ host }: { host: string }) {
   return (
-    <div className="overflow-hidden rounded-3xl bg-surface" aria-label={`Caricamento ${host}`}>
-      <div className="skeleton h-56" />
+    <div className="shadow-card overflow-hidden rounded-3xl bg-surface" aria-label={`Caricamento ${host}`}>
+      <div className="skeleton h-[180px]" />
       <div className="flex flex-col gap-2.5 p-4">
         <p className="text-[13px] text-muted">{host}</p>
         <div className="skeleton h-4 w-4/5 rounded-full" />
@@ -260,7 +260,7 @@ function Success({ fromSafari, pending }: { fromSafari: boolean; pending: boolea
             <path d="M5 12.5l4.5 4.5L19 7.5" className="check-path stroke-drop" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <h1 className="mt-6 font-display text-2xl font-bold">Fatto, lo seguo</h1>
+        <h1 className="mt-6 font-serif text-3xl">Fatto, lo seguo</h1>
         <p className="mt-2 max-w-xs text-[15px] text-muted">
           {pending
             ? 'Riceverai una notifica con il prezzo attuale tra circa 2 minuti.'
@@ -308,7 +308,11 @@ function NoLink() {
           placeholder="https://…"
           className="h-14 rounded-2xl border border-line bg-surface px-4 text-[16px] outline-none focus:border-ink"
         />
-        <button type="submit" disabled={!url} className="h-14 rounded-2xl bg-accent font-semibold text-on-accent disabled:opacity-35">
+        <button
+          type="submit"
+          disabled={!url}
+          className="h-14 rounded-2xl bg-gradient-to-br from-accent to-accent2 font-semibold text-on-accent disabled:opacity-35"
+        >
           Continua
         </button>
       </form>

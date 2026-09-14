@@ -76,7 +76,7 @@ export function EditSheet({ product, onClose, onSave, onCheck, onDelete }: Props
                 setBusy(null)
               }
             }}
-            className="h-14 rounded-2xl bg-accent text-[17px] font-semibold text-on-accent transition active:scale-[0.98] disabled:opacity-40"
+            className="h-14 rounded-2xl bg-gradient-to-br from-accent to-accent2 text-[17px] font-semibold text-on-accent transition active:scale-[0.98] disabled:opacity-40"
           >
             {busy === 'save' ? 'Salvataggio…' : 'Salva'}
           </button>

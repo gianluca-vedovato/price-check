@@ -71,7 +71,7 @@ export function ListPage() {
   return (
     <div className="mx-auto min-h-dvh max-w-xl px-4 pt-safe pb-safe">
       <header className="flex items-center justify-between pt-2 pb-4">
-        <h1 className="font-display text-[32px] leading-none font-bold tracking-tight">Prezzi</h1>
+        <h1 className="font-serif text-[34px] leading-none tracking-tight">Prezzi</h1>
         <Link to="/setup" aria-label="Impostazioni" className="grid size-11 place-items-center rounded-full text-muted active:bg-sunken">
           <IconSettings />
         </Link>
@@ -82,7 +82,7 @@ export function ListPage() {
           e.preventDefault()
           goAdd(link)
         }}
-        className="mb-5 flex h-14 items-center gap-2 rounded-2xl border border-line bg-surface pr-1.5 pl-4 focus-within:border-ink"
+        className="mb-5 flex h-14 items-center gap-2 rounded-[20px] border border-line bg-surface pr-1.5 pl-4 focus-within:border-ink"
       >
         <label htmlFor="link" className="sr-only">
           Link del prodotto
@@ -103,10 +103,13 @@ export function ListPage() {
               goAdd(url)
             }
           }}
-          className="h-full min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-faint"
+          className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-faint"
         />
         {link ? (
-          <button type="submit" className="h-11 rounded-xl bg-accent px-4 text-[15px] font-semibold text-on-accent">
+          <button
+            type="submit"
+            className="h-10 rounded-[14px] bg-gradient-to-br from-accent to-accent2 px-4 text-[14px] font-semibold text-on-accent"
+          >
             Aggiungi
           </button>
         ) : (
@@ -114,9 +117,9 @@ export function ListPage() {
             <button
               type="button"
               onClick={pasteFromClipboard}
-              className="flex h-11 items-center gap-1.5 rounded-xl bg-sunken px-3 text-[15px] font-semibold active:bg-line"
+              className="flex h-10 items-center gap-1.5 rounded-[14px] bg-sunken px-3 text-[14px] font-semibold active:bg-line"
             >
-              <IconClipboard width={18} height={18} />
+              <IconClipboard width={15} height={15} />
               Incolla
             </button>
           )
@@ -199,7 +202,7 @@ function EmptyState() {
       <div className="mb-5 grid size-16 place-items-center rounded-3xl bg-surface text-muted">
         <IconShare width={28} height={28} />
       </div>
-      <h2 className="font-display text-xl font-bold">Segui il tuo primo prodotto</h2>
+      <h2 className="font-serif text-2xl">Segui il tuo primo prodotto</h2>
       <p className="mt-2 max-w-xs text-[15px] leading-relaxed text-muted">
         {isIOS
           ? 'In Safari tocca Condividi → «Segui prezzo». Oppure incolla un link qui sopra.'

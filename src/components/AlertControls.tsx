@@ -19,7 +19,7 @@ export function RuleControl({ value, onChange, currencySymbol, currentPrice }: R
   return (
     <fieldset>
       <legend className="mb-2 text-[13px] font-medium text-muted">Avvisami quando</legend>
-      <div role="radiogroup" className="grid grid-cols-2 gap-1 rounded-2xl bg-sunken p-1">
+      <div role="radiogroup" className="grid grid-cols-2 gap-1 rounded-[18px] bg-sunken p-1">
         {(['drop', 'below'] as const).map((type) => (
           <button
             key={type}
@@ -27,8 +27,8 @@ export function RuleControl({ value, onChange, currencySymbol, currentPrice }: R
             role="radio"
             aria-checked={value.type === type}
             onClick={() => onChange({ ...value, type })}
-            className={`h-11 rounded-xl text-[15px] font-semibold transition ${
-              value.type === type ? 'bg-surface text-ink shadow-sm' : 'text-muted active:bg-line'
+            className={`h-11 rounded-[14px] text-[14px] font-semibold transition ${
+              value.type === type ? 'shadow-card bg-surface text-ink' : 'text-muted active:bg-line'
             }`}
           >
             {type === 'drop' ? 'Scende di prezzo' : 'Va sotto a'}
@@ -41,8 +41,8 @@ export function RuleControl({ value, onChange, currencySymbol, currentPrice }: R
           <label htmlFor={inputId} className="sr-only">
             Prezzo obiettivo
           </label>
-          <div className="flex h-14 flex-1 items-center rounded-2xl border border-line bg-surface px-4 focus-within:border-ink">
-            <span className="mr-1 text-xl font-semibold text-faint">{currencySymbol}</span>
+          <div className="flex h-14 flex-1 items-center rounded-[18px] border border-line bg-surface px-4 focus-within:border-ink">
+            <span className="mr-1 text-[19px] font-semibold text-faint">{currencySymbol}</span>
             <input
               id={inputId}
               inputMode="decimal"
@@ -51,7 +51,7 @@ export function RuleControl({ value, onChange, currencySymbol, currentPrice }: R
               value={value.cap}
               onChange={(e) => onChange({ ...value, cap: e.target.value.replace(/[^\d.,]/g, '') })}
               onFocus={(e) => e.target.select()}
-              className="tabular w-full bg-transparent font-display text-2xl font-semibold outline-none"
+              className="tabular w-full bg-transparent font-serif text-2xl outline-none"
             />
           </div>
           {pct !== undefined && pct > 0 && (
@@ -78,8 +78,10 @@ export function IntervalChips({ value, onChange }: IntervalProps) {
             aria-checked={value === hours}
             aria-label={hours === 1 ? 'Ogni ora' : `Ogni ${hours} ore`}
             onClick={() => onChange(hours)}
-            className={`tabular h-11 flex-1 rounded-full border text-[15px] font-semibold transition ${
-              value === hours ? 'border-ink bg-ink text-canvas' : 'border-line bg-surface text-ink active:bg-sunken'
+            className={`tabular h-11 flex-1 rounded-full text-[14px] transition ${
+              value === hours
+                ? 'bg-gradient-to-br from-accent to-accent2 font-bold text-on-accent'
+                : 'border border-line bg-surface font-semibold text-ink active:bg-sunken'
             }`}
           >
             {hours}h

@@ -13,7 +13,7 @@ export function SetupPage() {
         <Link to="/" aria-label="Torna alla lista" className="-ml-2 grid size-11 place-items-center rounded-full active:bg-sunken">
           <IconBack />
         </Link>
-        <h1 className="font-display text-[28px] font-bold tracking-tight">Impostazioni</h1>
+        <h1 className="font-serif text-[28px] tracking-tight">Impostazioni</h1>
       </header>
 
       <div className="flex flex-col gap-3">
@@ -22,7 +22,7 @@ export function SetupPage() {
         <ShareStep />
         <Link
           to="/"
-          className="mt-2 flex h-14 items-center justify-center rounded-2xl bg-accent text-[17px] font-semibold text-on-accent active:scale-[0.98]"
+          className="mt-1.5 flex h-14 items-center justify-center rounded-2xl bg-sunken text-[16px] font-semibold text-ink active:scale-[0.98]"
         >
           Vai ai miei prezzi
         </Link>
@@ -33,7 +33,7 @@ export function SetupPage() {
 
 function Step({ icon, title, done, children }: { icon: ReactNode; title: string; done?: boolean; children: ReactNode }) {
   return (
-    <section className="animate-rise rounded-3xl bg-surface p-5">
+    <section className="shadow-card animate-rise rounded-3xl bg-surface p-5">
       <div className="mb-3 flex items-center gap-3">
         <span
           className={`grid size-8 shrink-0 place-items-center rounded-full text-sm font-bold ${
@@ -62,7 +62,11 @@ function InstallStep() {
           <li>Apri Prezzi dalla schermata Home</li>
         </ol>
       ) : prompt ? (
-        <button type="button" onClick={() => prompt.prompt()} className="h-12 w-full rounded-xl bg-accent font-semibold text-on-accent">
+        <button
+          type="button"
+          onClick={() => prompt.prompt()}
+          className="h-12 w-full rounded-xl bg-gradient-to-br from-accent to-accent2 font-semibold text-on-accent"
+        >
           Installa l’app
         </button>
       ) : (
@@ -131,7 +135,7 @@ function NotificationStep() {
             type="button"
             disabled={busy || state === null}
             onClick={() => run(enablePush)}
-            className="h-12 w-full rounded-xl bg-accent font-semibold text-on-accent disabled:opacity-35"
+            className="h-12 w-full rounded-xl bg-gradient-to-br from-accent to-accent2 font-semibold text-on-accent disabled:opacity-35"
           >
             {busy ? 'Attivazione…' : 'Attiva le notifiche'}
           </button>
@@ -209,7 +213,7 @@ function ShareStep() {
           e.preventDefault()
           toast('Trascinalo nella barra dei preferiti')
         }}
-        className="inline-flex h-11 cursor-grab items-center rounded-xl bg-accent px-4 font-semibold text-on-accent"
+        className="inline-flex h-11 cursor-grab items-center rounded-full bg-gradient-to-br from-accent to-accent2 px-4 font-semibold text-on-accent"
       >
         + Segui prezzo
       </a>
