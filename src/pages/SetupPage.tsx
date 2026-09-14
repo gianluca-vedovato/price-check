@@ -59,7 +59,7 @@ function InstallStep() {
             Tocca <IconShare width={16} height={16} className="inline -translate-y-0.5 text-ink" /> Condividi nella barra di Safari
           </li>
           <li>Scegli <strong className="text-ink">Aggiungi alla schermata Home</strong></li>
-          <li>Apri Prezzi dalla schermata Home</li>
+          <li>Apri Price Check dalla schermata Home</li>
         </ol>
       ) : prompt ? (
         <button
@@ -71,7 +71,7 @@ function InstallStep() {
         </button>
       ) : (
         <p>
-          Apri il menu del browser ⋮ e scegli <strong className="text-ink">Installa app</strong>. Poi Prezzi comparirà nel menu Condividi.
+          Apri il menu del browser ⋮ e scegli <strong className="text-ink">Installa app</strong>. Poi Price Check comparirà nel menu Condividi.
         </p>
       )}
       {isIOS && <p className="mt-2 text-sm">Su iPhone le notifiche funzionano solo per le app aggiunte alla schermata Home.</p>}
@@ -104,7 +104,7 @@ function NotificationStep() {
       {state === 'unsupported' ? (
         <p>
           {isIOS && !isStandalone
-            ? 'Apri Prezzi dalla schermata Home per attivare le notifiche.'
+            ? 'Apri Price Check dalla schermata Home per attivare le notifiche.'
             : 'Questo browser non supporta le notifiche.'}
         </p>
       ) : state === 'denied' ? (
@@ -166,7 +166,7 @@ function ShareStep() {
     return (
       <Step icon={<IconShare width={16} height={16} />} title="Aggiungi da qualsiasi app" done={isStandalone}>
         <p>
-          Dopo l’installazione tocca <strong className="text-ink">Condividi → Prezzi</strong> in Chrome, Zara, Amazon o qualsiasi app di shopping.
+          Dopo l’installazione tocca <strong className="text-ink">Condividi → Price Check</strong> in Chrome, Zara, Amazon o qualsiasi app di shopping.
         </p>
       </Step>
     )

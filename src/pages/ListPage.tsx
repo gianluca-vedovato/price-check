@@ -207,7 +207,7 @@ function EmptyState() {
         {isIOS
           ? 'In Safari tocca Condividi → «Segui prezzo». Oppure incolla un link qui sopra.'
           : isAndroid
-            ? 'Da qualsiasi app tocca Condividi → Prezzi. Oppure incolla un link qui sopra.'
+            ? 'Da qualsiasi app tocca Condividi → Price Check. Oppure incolla un link qui sopra.'
             : 'Incolla qui sopra il link di un prodotto, oppure usa il pulsante per i preferiti dalle Impostazioni.'}
       </p>
       <Link to="/setup" className="mt-4 text-[15px] font-semibold underline underline-offset-4">

@@ -12,7 +12,7 @@ precacheAndRoute(self.__WB_MANIFEST)
 type Payload = { title: string; body: string; image?: string; url: string; tag?: string }
 
 self.addEventListener('push', (event) => {
-  const data: Payload = event.data?.json() ?? { title: 'Prezzi', body: '', url: '/' }
+  const data: Payload = event.data?.json() ?? { title: 'Price Check', body: '', url: '/' }
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,

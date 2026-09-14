@@ -60,7 +60,7 @@ Cost: each product takes about 10–15 s, or twice that when the first browser i
 The app UI is in Italian.
 
 - **iPhone:** Safari → Condividi → *Aggiungi alla schermata Home*. Open the app from the Home Screen and turn on notifications (iOS only allows push for Home Screen apps). Then follow *Impostazioni* to create the *Segui prezzo* Shortcut for Safari's share sheet.
-- **Android:** Chrome → *Installa app*. **Prezzi** then appears in every app's share menu.
+- **Android:** Chrome → *Installa app*. **Price Check** then appears in every app's share menu.
 - **Desktop:** paste links in the list, or drag the bookmarklet from Settings.
 
 ## Local development

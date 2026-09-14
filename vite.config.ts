@@ -17,8 +17,8 @@ export default defineConfig({
       devOptions: { enabled: true, type: 'module' },
       injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] },
       manifest: {
-        name: 'Prezzi',
-        short_name: 'Prezzi',
+        name: 'Price Check',
+        short_name: 'Price Check',
         description: 'Ricevi un avviso quando un prodotto costa meno.',
         lang: 'it',
         start_url: '/',
